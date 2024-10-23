@@ -50,7 +50,7 @@ const Likes = () => {
 
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
-    dispatch(setMinimized(offsetY > 100));
+    dispatch(setMinimized(offsetY > 50));
   };
 
   const renderItem = ({ item }: { item: any }) => {
@@ -83,7 +83,7 @@ const Likes = () => {
   ];
 
   return (
-    <SafeAreaView className="flex-0 bg-white h-2/3" edges={['bottom']}>
+    <SafeAreaView className="flex-0 bg-white h-3/4" edges={['bottom']}>
       <FlatList
         data={dataWithEmptyItems}
         renderItem={renderItem}
