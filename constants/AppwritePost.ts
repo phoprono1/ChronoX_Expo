@@ -1,19 +1,20 @@
 import { databases } from "./AppwriteClient";
 import { config } from "./Config";
-import { ID, Query } from "react-native-appwrite";
+import { ID, Models, Query } from "react-native-appwrite";
 import { uploadFile, uploadPostFiles } from "./AppwriteFile";
 import { getUserInfo } from "./AppwriteUser";
-// Các phương thức liên quan đến bài viết như thích, không thích, lấy thống kê có thể được thêm vào đây.
-// Phương thức tạo bài viết
+import { getFollowerTargets } from "./AppwriteUser";
+import { sendBulkPushNotifications } from "../services/NotificationService";
+
 export const createPost = async (
   mediaUris: string[],
   title: string,
   hashtags: string[]
 ) => {
   try {
-    let uploadedFiles: { id: string }[] = []; // Chỉ lưu ID của file
+    let uploadedFiles: { id: string }[] = [];
 
-    // Nếu mediaUris không rỗng, tải file lên Storage
+    // Upload files nếu có
     if (mediaUris && mediaUris.length > 0) {
       const files = mediaUris.map((uri) => {
         const fileExtension = uri.split(".").pop();
@@ -27,22 +28,22 @@ export const createPost = async (
         };
       });
 
-      // Tải lên tất cả các file và chỉ lấy ID
       uploadedFiles = (await uploadPostFiles(files)).map(file => ({ id: file.id }));
     }
 
-    // Lấy ID của người dùng hiện tại
+    // Lấy thông tin người dùng hiện tại
     const currentUser = await getUserInfo();
     const userId = currentUser.$id;
-    // Tạo đối tượng bài viết
+
+    // Tạo bài viết
     const postDocument = {
-      fileIds: uploadedFiles.map((file) => file.id), // Chỉ lưu ID của các file đã tải lên
+      fileIds: uploadedFiles.map((file) => file.id),
       title,
       hashtags,
       accountID: userId,
     };
 
-    // Lưu bài viết vào PostCollections
+    // Lưu bài viết
     const response = await databases.createDocument(
       config.databaseId,
       config.postCollectionId,
@@ -50,6 +51,7 @@ export const createPost = async (
       postDocument
     );
 
+    // Tạo thống kê cho bài viết
     const statisticsPostDocument = {
       postCollections: response.$id,
       likes: 0,
@@ -62,6 +64,44 @@ export const createPost = async (
       ID.unique(),
       statisticsPostDocument
     );
+
+    // Gửi thông báo cho followers
+    try {
+      // Lấy danh sách target của followers
+      console.log("userId", userId);
+      const followerTargets = await getFollowerTargets(userId);
+      
+      if (followerTargets.length > 0) {
+        // Chuẩn bị nội dung thông báo
+        const notificationTitle = `${currentUser.username} đã đăng bài viết mới`;
+        const notificationMessage = title.length > 100 
+          ? title.substring(0, 97) + '...' 
+          : title;
+
+        // Thêm data cho notification
+        const notificationData = {
+          type: 'new_post',
+          postId: response.$id,
+          userId: currentUser.$id,
+          username: currentUser.username,
+          avatarId: currentUser.avatarId,
+          timestamp: new Date().toISOString()
+        };
+
+        // Gửi thông báo
+        await sendBulkPushNotifications(
+          followerTargets,
+          notificationTitle,
+          notificationMessage,
+          notificationData
+        );
+
+        console.log('Đã gửi thông báo cho', followerTargets.length, 'followers');
+      }
+    } catch (notificationError) {
+      // Log lỗi nhưng không throw để không ảnh hưởng đến việc tạo bài viết
+      console.error('Lỗi khi gửi thông báo:', notificationError);
+    }
 
     return response;
   } catch (error) {
@@ -430,5 +470,38 @@ export const getUserLikedPosts = async (userId: string) => {
   catch (error) {
     console.error("Lỗi khi lấy danh sách bài viết mà người dùng đã thích:", error);
     throw error; // Ném lỗi để xử lý ở nơi gọi hàm
+  }
+};
+
+export const getMostLikedPosts = async () => {
+  try {
+    const likedPosts = await databases.listDocuments(
+      config.databaseId,
+      config.statisticsPostCollectionId,
+      [Query.orderDesc('likes'), Query.limit(12)]
+    );
+    return likedPosts;
+  }
+  catch (error) {
+    console.error("Lỗi khi lấy danh sách bài viết theo thứ tự like giảm dần", error);
+    throw error; // Ném lỗi để xử lý ở nơi gọi hàm
+  }
+};
+
+export const getAllPosts = async (limit = 100, cursor: string | null = null): Promise<Models.DocumentList<Models.Document>> => {
+  try {
+    let queries = [Query.limit(limit)];
+    if (cursor) {
+      queries.push(Query.cursorAfter(cursor));
+    }
+    const posts = await databases.listDocuments(
+      config.databaseId,
+      config.postCollectionId,
+      queries
+    );
+    return posts;
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách bài viết:", error);
+    throw error;
   }
 };

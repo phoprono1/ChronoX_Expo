@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { MaterialIcons, SimpleLineIcons } from "@expo/vector-icons";
 import { followUser, unfollowUser } from "@/constants/AppwriteFollow";
+import { UserMinus, UserPlus, MessageCircle } from 'lucide-react-native';
 
 interface FollowComponentProps {
   followerId: string;
@@ -34,28 +34,28 @@ const FollowComponent: React.FC<FollowComponentProps> = ({
     <View className="flex-row justify-between items-center space-x-3 my-4 px-4">
       {isFollowing ? (
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center py-2.5 px-4 rounded-full bg-gray-200"
+          className="flex-1 flex-row items-center justify-center py-2.5 px-4 rounded-full bg-[#F5F5F0] border border-[#8B4513]"
           onPress={handleUnfollow}
         >
-          <SimpleLineIcons name="user-unfollow" size={18} color="#4B5563" />
-          <Text className="ml-2 text-sm font-semibold text-gray-700">
+          <UserMinus size={18} color="#8B4513" strokeWidth={2} />
+          <Text className="ml-2 text-sm font-semibold text-[#2F1810]">
             Đang theo dõi
           </Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center py-2.5 px-4 rounded-full bg-blue-500"
+          className="flex-1 flex-row items-center justify-center py-2.5 px-4 rounded-full bg-[#8B4513]"
           onPress={handleFollow}
         >
-          <SimpleLineIcons name="user-follow" size={18} color="white" />
-          <Text className="ml-2 text-sm font-semibold text-white">
+          <UserPlus size={18} color="#F5F5F0" strokeWidth={2} />
+          <Text className="ml-2 text-sm font-semibold text-[#F5F5F0]">
             Theo dõi
           </Text>
         </TouchableOpacity>
       )}
-      <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2.5 px-4 rounded-full bg-gray-100">
-        <MaterialIcons name="message" size={18} color="#4B5563" />
-        <Text className="ml-2 text-sm font-semibold text-gray-700">
+      <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2.5 px-4 rounded-full bg-[#F5F5F0] border border-[#D2B48C]">
+        <MessageCircle size={18} color="#8B4513" strokeWidth={2} />
+        <Text className="ml-2 text-sm font-semibold text-[#2F1810]">
           Nhắn tin
         </Text>
       </TouchableOpacity>

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
   SafeAreaView,
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -17,22 +17,16 @@ import { avatars, client } from "@/constants/AppwriteClient";
 import { fetchPostById, getUserPostsCount } from "@/constants/AppwritePost";
 import { config } from "@/constants/Config";
 import { useSelector } from "react-redux";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
 import { getAvatarUrl } from "@/constants/AppwriteFile";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Ionicons } from "@expo/vector-icons";
+
+import { 
+  Menu as MenuIcon, 
+  MapPin, 
+  Link as LinkIcon 
+} from 'lucide-react-native';
+
 const DisplayAvatar = () => {
   const user = useSelector((state: any) => state.user); // Lấy trạng thái người dùng từ Redux
-  const isMinimized = useSelector((state: any) => state.minimize.isMinimized); // Lấy trạng thái isMinimized từ Redux
-  const { width, height } = Dimensions.get("window");
-
-  const fullContainerHeight = height * 0.42;
-  const minimizedHeight = height * 0.12; // Giữ nguyên chiều cao khi thu nhỏ
 
   const [userInfo, setUserInfo] = useState<{
     name: string;
@@ -55,22 +49,6 @@ const DisplayAvatar = () => {
     website: null,
     postsCount: 0, // Khởi tạo postsCount
   });
-
-  // Khởi tạo giá trị cho scale và position
-  const avatarScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const followScale = useSharedValue(1);
-  const contentOpacity = useSharedValue(1);
-  const containerHeight = useSharedValue(fullContainerHeight);
-
-  // Thêm các shared values mới cho text container
-  const textTranslateX = useSharedValue(0);
-  const textTranslateY = useSharedValue(0);
-
-  // Calculate center position
-  const centerX = width / 2 - 64; // 64 is half of avatar width (128px)
-  const initialY = 16; // Initial padding from top
 
   const fetchUserInfo = async () => {
     // Định nghĩa lại hàm fetchUserInfo
@@ -96,77 +74,6 @@ const DisplayAvatar = () => {
   useEffect(() => {
     fetchUserInfo(); // Gọi hàm fetchUserInfo khi component được mount
   }, [user]);
-
-  useEffect(() => {
-    if (isMinimized) {
-      // Di chuyển text container lên cạnh avatar
-      textTranslateX.value = withSpring(width * 0.4); // Điều chỉnh khoảng cách từ avatar (20% chiều rộng màn hình)
-      textTranslateY.value = withSpring(-height * 0.12); // Điều chỉnh độ cao để căn giữa với avatar (5% chiều cao màn hình)
-      // Move to top-left corner
-      translateX.value = withSpring(-centerX + width * 0.04); // 4% padding from left
-      translateY.value = withSpring(-initialY + height * 0.004); // 4% padding from top
-      avatarScale.value = withSpring(0.5);
-      followScale.value = withTiming(0, { duration: 100 });
-      contentOpacity.value = withTiming(1, { duration: 100 });
-      containerHeight.value = withTiming(minimizedHeight); // Minimized height (adjust based on your needs)
-    } else {
-      // Trả text container về vị trí ban đầu
-      textTranslateX.value = withSpring(0);
-      textTranslateY.value = withSpring(0);
-      // Move back to center
-      translateX.value = withSpring(0);
-      translateY.value = withSpring(0);
-      avatarScale.value = withSpring(1);
-      followScale.value = withTiming(1, { duration: 100 });
-      contentOpacity.value = withTiming(1, { duration: 100 });
-      containerHeight.value = withTiming(fullContainerHeight); // Original height
-    }
-  }, [isMinimized]);
-
-  // Animated styles for container
-  const animatedAvatarContainerStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { scale: avatarScale.value },
-      ],
-      alignSelf: "center",
-    };
-  });
-
-  // Cập nhật animatedContentStyle
-  const animatedContentStyle = useAnimatedStyle(() => {
-    return {
-      opacity: contentOpacity.value,
-      transform: [
-        { translateX: textTranslateX.value },
-        { translateY: textTranslateY.value },
-      ],
-      alignItems: isMinimized ? "flex-start" : "center",
-      marginTop: isMinimized ? 0 : 16,
-    };
-  });
-
-  // Stats container animated style
-  const animatedStatsStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: followScale.value }],
-      opacity: followScale.value,
-      flexDirection: "row",
-      justifyContent: "center",
-      width: "100%",
-      marginTop: 16,
-    };
-  });
-
-  // Add container animated style
-  const animatedContainerStyle = useAnimatedStyle(() => {
-    return {
-      height: containerHeight.value,
-      overflow: "hidden",
-    };
-  });
 
   const handleChangeAvatar = async () => {
     const permissionResult =
@@ -251,102 +158,79 @@ const DisplayAvatar = () => {
   }, []);
 
   return (
-    <SafeAreaView className={`bg-white`}>
-      <Animated.View
-        style={[animatedContainerStyle]}
-        className="relative w-full"
-      >
-        <TouchableOpacity 
-          className="absolute top-4 right-4 z-10"
-          onPress={() => {
-            // Xử lý sự kiện khi nhấn vào nút chỉnh sửa
-            console.log("Chỉnh sửa trang cá nhân");
-          }}
-        >
-          <Ionicons name="pencil" size={28} color="#0000ff" />
+    <View className="bg-[#F5F5F0]">
+      {/* Header */}
+      <View className="px-4 py-3 flex-row justify-between items-center border-b border-[#D2B48C]">
+        <Text className="text-xl text-[#2F1810] font-medium">Hồ sơ</Text>
+        <TouchableOpacity className="w-10 h-10 items-center justify-center rounded-full active:bg-[#D2B48C]/20">
+          <MenuIcon size={24} color="#8B4513" strokeWidth={1.5} />
         </TouchableOpacity>
-        <Animated.View style={animatedAvatarContainerStyle}>
-          <TouchableOpacity onPress={handleChangeAvatar}>
-            <Animated.Image
+      </View>
+  
+      <View className="px-4 pt-4 pb-2">
+        {/* Avatar và Thông tin cơ bản */}
+        <View className="flex-row justify-between items-start mb-4">
+          <View>
+            <Text className="text-2xl text-[#2F1810] font-medium mb-1">{userInfo.name}</Text>
+            <Text className="text-base text-[#8B7355]">{userInfo.email}</Text>
+          </View>
+          <TouchableOpacity 
+            onPress={handleChangeAvatar}
+            className="p-[2px] rounded-full border border-[#D2B48C]"
+          >
+            <Image
               source={{
                 uri: userInfo.avatarId
                   ? getAvatarUrl(userInfo.avatarId)
-                  : String(avatars.getInitials(userInfo.name, 30, 30)), // Sử dụng getFileUrl để lấy URL của avatar
+                  : String(avatars.getInitials(userInfo.name, 30, 30)),
               }}
-              className="w-32 h-32 rounded-full border-2 border-gray-300"
+              className="w-20 h-20 rounded-full"
             />
           </TouchableOpacity>
-        </Animated.View>
-
-        <Animated.View style={[animatedContentStyle]} className="flex">
-          <Text className="font-bold text-xl">{user.name}</Text>
-          <Text className="text-gray-500 text-sm">{user.email}</Text>
-        </Animated.View>
-
-        <Animated.View
-          style={animatedStatsStyle}
-          className={`${
-            isMinimized ? "hidden" : "flex flex-row justify-center w-full"
-          }`}
-        >
-          <View className="flex-1 items-center">
-            <Text className="font-bold text-lg">{user.postsCount}</Text>
-            <Text className="text-gray-500 text-xs">Bài viết</Text>
+        </View>
+  
+        {/* Bio */}
+        {userInfo.bio && (
+          <Text className="text-base text-[#2F1810] mb-4 leading-5">{userInfo.bio}</Text>
+        )}
+  
+        {/* Thống kê */}
+        <View className="flex-row items-center space-x-6 mb-4">
+          <View className="items-center">
+            <Text className="text-lg font-medium text-[#2F1810]">{userInfo.postsCount}</Text>
+            <Text className="text-[#8B7355]">Bài viết</Text>
           </View>
-          <View className="flex-1 items-center">
-            <Text className="font-bold text-lg">{user.follower}</Text>
-            <Text className="text-gray-500 text-xs">Người theo dõi</Text>
+          <View className="items-center">
+            <Text className="text-lg font-medium text-[#2F1810]">{userInfo.follower}</Text>
+            <Text className="text-[#8B7355]">Người theo dõi</Text>
           </View>
-          <View className="flex-1 items-center">
-            <Text className="font-bold text-lg">{user.followed}</Text>
-            <Text className="text-gray-500 text-xs">Đang theo dõi</Text>
+          <View className="items-center">
+            <Text className="text-lg font-medium text-[#2F1810]">{userInfo.followed}</Text>
+            <Text className="text-[#8B7355]">Đang theo dõi</Text>
           </View>
-        </Animated.View>
-        <Animated.View style={[animatedContentStyle]}>
-          {user.bio && (
-            <Text
-              className={`text-gray-600 text-sm mb-4 ${
-                isMinimized ? "hidden" : "font-semibold"
-              }`}
-            >
-              "{user.bio}"
-            </Text>
-          )}
-          <View className={`flex-row items-center mb-2`}>
-            {user.location && (
-              <>
-                {isMinimized ? null : (
-                  <Ionicons name="location-outline" size={16} color="gray" />
-                )}
-                <Text
-                  className={`text-gray-600 text-sm ml-2 ${
-                    isMinimized ? "hidden" : ""
-                  }`}
-                >
-                  {user.location}
+        </View>
+  
+        {/* Location và Website */}
+        {(userInfo.location || userInfo.website) && (
+          <View className="space-y-2 mb-2">
+            {userInfo.location && (
+              <View className="flex-row items-center">
+                <MapPin size={16} color="#8B4513" strokeWidth={1.5} />
+                <Text className="text-[#8B7355] ml-2">
+                  {userInfo.location}
                 </Text>
-              </>
+              </View>
+            )}
+            {userInfo.website && (
+              <View className="flex-row items-center">
+                <LinkIcon size={16} color="#8B4513" strokeWidth={1.5} />
+                <Text className="text-[#8B7355] ml-2">{userInfo.website}</Text>
+              </View>
             )}
           </View>
-          <View className={`flex-row items-center mb-4`}>
-            {user.website && (
-              <>
-                {isMinimized ? null : (
-                  <Ionicons name="globe-outline" size={16} color="gray" />
-                )}
-                <Text
-                  className={`text-gray-600 text-sm ml-2 ${
-                    isMinimized ? "hidden" : ""
-                  }`}
-                >
-                  {user.website}
-                </Text>
-              </>
-            )}
-          </View>
-        </Animated.View>
-      </Animated.View>
-    </SafeAreaView>
+        )}
+      </View>
+    </View>
   );
 };
 

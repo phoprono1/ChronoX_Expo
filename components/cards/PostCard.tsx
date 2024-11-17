@@ -5,13 +5,20 @@ import {
   TouchableOpacity,
   Pressable,
   Dimensions,
-  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
 import { ResizeMode, Video } from "expo-av"; // Import Video từ expo-av
 import RenderHTML from "react-native-render-html";
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons
 import { getAvatarUrl, getFileUrl } from "@/constants/AppwriteFile";
+
+import {
+  MoreHorizontal,
+  Heart,
+  MessageCircle,
+  Share,
+} from "lucide-react-native";
+import { FlashList } from "@shopify/flash-list";
 
 interface PostCardProps {
   avatar: string;
@@ -32,11 +39,22 @@ interface PostCardProps {
   showMoreOptionsIcon?: boolean; // Thêm thuộc tính này
 }
 
-const ImageCounter = ({ current, total }: { current: number; total: number }) => (
-  <View className="absolute bottom-2 right-2 bg-black bg-opacity-50 px-2 py-1 rounded-full">
-    <Text className="text-white text-xs">
-      {current}/{total}
-    </Text>
+const ImageCounter = ({
+  current,
+  total,
+}: {
+  current: number;
+  total: number;
+}) => (
+  <View className="absolute bottom-2 left-1/2 -translate-x-1/2 flex-row gap-1.5">
+    {Array.from({ length: total }).map((_, index) => (
+      <View
+        key={index}
+        className={`h-2 w-2 rounded-full ${
+          index === current - 1 ? "bg-[#8B4513]" : "bg-[#D2B48C] opacity-60"
+        }`}
+      />
+    ))}
   </View>
 );
 
@@ -61,7 +79,6 @@ const PostCard: React.FC<PostCardProps> = ({
   const [liked, setLiked] = useState(isLiked); // Trạng thái thích
   const [mediaTypes, setMediaTypes] = useState<string[]>([]); // Lưu trữ loại media
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
 
   const textStyle = {
     color: "black",
@@ -127,76 +144,74 @@ const PostCard: React.FC<PostCardProps> = ({
     checkMediaTypes();
   }, [fileIds]);
 
-  const renderSingleMedia = (fileId: string) => {
-    const mediaUrl = getFileUrl(fileId);
-    const isVideo = mediaTypes[0] === "video";
+  const renderSingleMedia = (fileId: string) => (
+    <View className="w-full aspect-square relative">
+      {mediaTypes[0] === "video" ? (
+        <Video
+          source={{ uri: getFileUrl(fileId) }}
+          useNativeControls
+          resizeMode={ResizeMode.COVER}
+          isLooping={false}
+          style={{ width: "100%", height: "100%" }}
+        />
+      ) : (
+        <Image
+          source={{ uri: getFileUrl(fileId) }}
+          contentFit="cover"
+          style={{ width: "100%", height: "100%" }}
+          transition={200}
+          onLoadStart={() => <ActivityIndicator color="#8B4513" />}
+          onError={() => {/* Xử lý lỗi load ảnh */}}
+        />
+      )}
+    </View>
+  );
 
+  const renderMultipleMedia = () => {
+    const { width: screenWidth } = Dimensions.get("window");
+  
     return (
-      <View className="w-full aspect-square overflow-hidden flex-1">
-        {isVideo ? (
-          <Video
-            source={{ uri: mediaUrl }}
-            useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
-            isLooping={false}
-            className="h-full w-full max-w-full"
-          />
-        ) : (
-          <Image
-            source={{ uri: mediaUrl }}
-            contentFit="cover"
-            className="h-full w-full max-w-full"
-          />
-        )}
-        {fileIds.length > 1 && (
-          <ImageCounter current={1} total={fileIds.length} />
-        )}
+      <View className="w-full aspect-square relative">
+        <FlashList
+          horizontal
+          data={fileIds}
+          estimatedItemSize={screenWidth}
+          renderItem={({ item, index }) => (
+            <View style={{ width: screenWidth / 1.085, aspectRatio: 1 }}>
+              {mediaTypes[index] === "video" ? (
+                <Video
+                  source={{ uri: getFileUrl(item) }}
+                  useNativeControls
+                  resizeMode={ResizeMode.COVER}
+                  isLooping={false}
+                  style={{ width: "100%", height: "100%" }}
+                />
+              ) : (
+                <Image
+                  source={{ uri: getFileUrl(item) }}
+                  contentFit="cover"
+                  style={{ width: "100%", height: "100%" }}
+                />
+              )}
+            </View>
+          )}
+          keyExtractor={(item) => item}
+          showsHorizontalScrollIndicator={false}
+          pagingEnabled
+          snapToInterval={screenWidth}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          onMomentumScrollEnd={(e) => {
+            const newIndex = Math.round(
+              e.nativeEvent.contentOffset.x / screenWidth
+            );
+            setCurrentImageIndex(newIndex);
+          }}
+        />
+        <ImageCounter current={currentImageIndex + 1} total={fileIds.length} />
       </View>
     );
   };
-
-  const renderMultipleMedia = () => {
-  const { width: screenWidth } = Dimensions.get('window');
-  
-  return (
-    <View className="w-full aspect-square relative">
-      <FlatList
-        horizontal
-        data={fileIds}
-        renderItem={({ item, index }) => (
-          <View style={{ width: screenWidth/1.085, aspectRatio: 1 }}>
-            {mediaTypes[index] === "video" ? (
-              <Video
-                source={{ uri: getFileUrl(item) }}
-                useNativeControls
-                resizeMode={ResizeMode.COVER}
-                isLooping={false}
-                style={{ width: '100%', height: '100%' }}
-              />
-            ) : (
-              <Image
-                source={{ uri: getFileUrl(item) }}
-                contentFit="cover"
-                style={{ width: '100%', height: '100%' }}
-              />
-            )}
-          </View>
-        )}
-        keyExtractor={(item) => item}
-        showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        snapToInterval={screenWidth}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        onMomentumScrollEnd={(e) => {
-          const newIndex = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-          setCurrentImageIndex(newIndex);
-        }}
-      />
-      <ImageCounter current={currentImageIndex + 1} total={fileIds.length} />
-    </View>
-  );
-};
 
   const RenderHTMLMemo = memo(({ html }: { html: string }) => (
     <RenderHTML
@@ -207,36 +222,41 @@ const PostCard: React.FC<PostCardProps> = ({
   ));
 
   return (
-    <View className="bg-white rounded-lg overflow-hidden">
+    <View className="bg-[#F5F5F0] rounded-lg overflow-hidden border border-[#D2B48C]">
       <TouchableOpacity
         onPress={onUserInfoPress}
-        className="flex-row items-center p-4"
+        className="flex-row items-center p-4 border-b border-[#D2B48C]"
       >
         <Image
           source={{ uri: getAvatarUrl(avatar) }}
-          className="w-10 h-10 rounded-full"
+          className="w-10 h-10 rounded-full border border-[#8B4513]"
         />
         <View className="ml-3">
-          <Text className="font-bold text-gray-800">{username}</Text>
-          <Text className="text-gray-500 text-sm">{email}</Text>
+          <Text className="font-bold text-[#2F1810]">{username}</Text>
+          <Text className="text-[#8B7355] text-sm">{email}</Text>
         </View>
         {showMoreOptionsIcon && (
           <Pressable className="ml-auto" onPress={showMoreOptions}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="gray" />
+            <MoreHorizontal size={24} color="#8B4513" strokeWidth={1.5} />
           </Pressable>
         )}
       </TouchableOpacity>
 
+      {/* Media content giữ nguyên cấu trúc */}
       {fileIds.length > 0 && (
-        fileIds.length === 1 ? renderSingleMedia(fileIds[0]) : renderMultipleMedia()
+        <View className="border-y border-[#D2B48C]">
+          {fileIds.length === 1
+            ? renderSingleMedia(fileIds[0])
+            : renderMultipleMedia()}
+        </View>
       )}
 
-      <View className="p-4">
+      <View className={`p-4 ${fileIds.length > 0 ? "" : "border-t-0"}`}>
         <TouchableOpacity onPress={onTitlePress}>
           <RenderHTMLMemo html={title} />
         </TouchableOpacity>
         <TouchableOpacity onPress={onHashtagPress} className="mt-2">
-          <Text className="text-blue-500 text-sm">
+          <Text className="text-[#8B4513] text-sm">
             {hashtags.map((tag) => `#${tag}`).join(" ")}
           </Text>
         </TouchableOpacity>
@@ -248,23 +268,28 @@ const PostCard: React.FC<PostCardProps> = ({
             onPress={handleLike}
             className="flex-row items-center mr-4"
           >
-            <Ionicons
-              name={liked ? "heart" : "heart-outline"}
-              size={24}
-              color={liked ? "red" : "gray"}
-            />
-            <Text className="ml-2 text-gray-600">{likes}</Text>
+            {liked ? (
+              <Heart
+                size={24}
+                fill="#8B4513"
+                color="#8B4513"
+                strokeWidth={1.5}
+              />
+            ) : (
+              <Heart size={24} color="#8B7355" strokeWidth={1.5} />
+            )}
+            <Text className="ml-2 text-[#2F1810]">{likes}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onComment}
             className="flex-row items-center"
           >
-            <Ionicons name="chatbubble-outline" size={22} color="gray" />
-            <Text className="ml-2 text-gray-600">{comments}</Text>
+            <MessageCircle size={22} color="#8B7355" strokeWidth={1.5} />
+            <Text className="ml-2 text-[#2F1810]">{comments}</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={handleShare}>
-          <Ionicons name="share-outline" size={24} color="gray" />
+          <Share size={24} color="#8B7355" strokeWidth={1.5} />
         </TouchableOpacity>
       </View>
     </View>

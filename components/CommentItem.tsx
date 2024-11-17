@@ -17,19 +17,19 @@ const CommentItem: React.FC<CommentItemProps> = ({ item }) => {
   }).format(new Date(item.$createdAt));
 
   return (
-    <View className="flex-row items-start p-4 bg-white border-b border-gray-100">
+    <View className="flex-row items-start p-4 bg-[#F5F5F0] border-b border-[#D2B48C]">
       <Image
         source={{ uri: getAvatarUrl(item.userCollections.avatarId) }}
-        className="w-10 h-10 rounded-full"
+        className="w-10 h-10 rounded-full border border-[#8B4513]"
       />
       <View className="ml-3 flex-1">
         <View className="flex-row items-center justify-between">
-          <Text className="font-semibold text-gray-800">
+          <Text className="font-semibold text-[#2F1810]">
             {item.userCollections.username}
           </Text>
-          <Text className="text-xs text-gray-500">{formattedDate}</Text>
+          <Text className="text-xs text-[#8B7355]">{formattedDate}</Text>
         </View>
-        <Text className="mt-1 text-gray-600">{item.comment}</Text>
+        <Text className="mt-1 text-[#2F1810]">{item.comment}</Text>
       </View>
     </View>
   );

@@ -14,8 +14,12 @@ import * as ImageManipulator from "expo-image-manipulator"; // Import ImageManip
 import RichTextEditor from "../RichTextEditor";
 import MediaPreview from "../MediaPreview"; // Import component MediaPreview
 import { useRouter } from "expo-router";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { createPost } from "@/constants/AppwritePost";
+
+import { Image as ImageIcon, Video, Trash2, TriangleAlert } from "lucide-react-native";
+import axios from "axios";
+import { Dialog } from "react-native-ui-lib"; // Thêm import Dialog
+import { ActivityIndicator } from "react-native";
 
 interface CreatePostProps {
   onPost: (post: {
@@ -25,6 +29,16 @@ interface CreatePostProps {
   }) => void;
 }
 
+// Thêm interface cho API response
+interface HateSpeechResponse {
+  results: {
+    "hate-speech-detection": string;
+    "toxic-speech-detection": string;
+    "hate-spans-detection": string;
+  };
+  processing_time: number;
+}
+
 const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
   const [mediaUris, setMediaUris] = useState<string[]>([]); // Đổi thành mảng
   const [hashtags, setHashtags] = useState<string>("");
@@ -32,6 +46,44 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
   const editorRef = useRef<any>(null);
   const router = useRouter();
   const [pressed, setPressed] = useState<boolean>(false); // Khởi tạo pressed
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogContent, setDialogContent] = useState("");
+  const [violatedContent, setViolatedContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const API_URL = Platform.select({
+    ios: "http://localhost:8000/analyze-text",
+    android: "http://10.0.2.2:8000/analyze-text",
+  });
+
+  const checkHateSpeech = async (text: string): Promise<HateSpeechResponse> => {
+    try {
+      const response = await axios.post(API_URL ?? "", {
+        text: text,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error checking hate speech:", error);
+      throw error;
+    }
+  };
+
+  const highlightHateContent = (text: string, hateSpans: string) => {
+    // Tìm các đoạn văn bản nằm giữa [hate] và [hate]
+    const matches = hateSpans.match(/\[hate\](.*?)\[hate\]/g);
+    if (!matches) return text;
+
+    // Highlight từng đoạn văn bản
+    let highlightedText = text;
+    matches.forEach((match) => {
+      const content = match.replace(/\[hate\]/g, "");
+      highlightedText = highlightedText.replace(
+        content,
+        `**${content}**` // Đánh dấu bằng markdown hoặc có thể dùng HTML tags
+      );
+    });
+    return highlightedText;
+  };
 
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -81,39 +133,55 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
   };
 
   const handlePost = async () => {
-    const description = bodyRef.current; // Lấy nội dung từ RichTextEditor
+    const description = bodyRef.current;
 
     if (!description.trim()) {
-      // Kiểm tra nếu mô tả trống
-      Alert.alert("Thông báo", "Không được để mô tả trống!"); // Hiển thị modal thông báo
+      Alert.alert("Thông báo", "Không được để mô tả trống!");
       return;
     }
-
-    // Trích xuất hashtags từ mô tả
-    const extractedHashtags = extractHashtags(description);
-    setHashtags(extractedHashtags.join(", ")); // Cập nhật state hashtags
-
-    // Loại bỏ hashtags khỏi mô tả
-    const cleanedDescription = removeHashtagsFromDescription(description);
+    setIsLoading(true); // Bắt đầu loading
 
     try {
-      // Gọi phương thức createPost để lưu bài viết
-      await createPost(
-        mediaUris, // Gửi mảng mediaUris
-        cleanedDescription, // Sử dụng mô tả đã loại bỏ hashtags
-        extractedHashtags // Sử dụng hashtags đã trích xuất
-      );
+      // // Kiểm tra hate speech trước khi đăng
+      const hateSpeechResult = await checkHateSpeech(description);
 
-      // Reset fields
-      setMediaUris([]); // Đặt lại mảng mediaUris
+      if (
+        hateSpeechResult.results["hate-speech-detection"] !== "clean" ||
+        hateSpeechResult.results["toxic-speech-detection"] !== "none"
+      ) {
+        // Highlight nội dung vi phạm
+        const highlightedText = highlightHateContent(
+          description,
+          hateSpeechResult.results["hate-spans-detection"]
+        );
+
+        setDialogContent("Phát hiện nội dung vi phạm quy tắc cộng đồng");
+        setViolatedContent(highlightedText);
+        setDialogVisible(true);
+        return;
+      }
+
+      // Nếu không có vi phạm, tiếp tục đăng bài
+      const extractedHashtags = extractHashtags(description);
+      const cleanedDescription = removeHashtagsFromDescription(description);
+
+      await createPost(mediaUris, cleanedDescription, extractedHashtags);
+
+      // Reset fields và callback
+      setMediaUris([]);
       setHashtags("");
       onPost({
         description: cleanedDescription,
-        mediaUri: mediaUris, // Gửi mảng mediaUris
+        mediaUri: mediaUris,
         hashtags: extractedHashtags,
       });
+
+      Alert.alert("Thành công", "Bài viết đã được đăng");
     } catch (error) {
       console.error("Lỗi khi tạo bài viết:", error);
+      Alert.alert("Lỗi", "Không thể đăng bài viết");
+    } finally {
+      setIsLoading(false); // Kết thúc loading
     }
   };
 
@@ -123,62 +191,159 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       className="flex-1"
     >
-      <View className="flex-1 p-4 bg-white">
-        <Text className="text-center text-2xl font-bold mb-4">
-          Tạo bài viết
-        </Text>
-        <View className="flex-1">
-          <RichTextEditor
-            editorRef={editorRef}
-            onChange={(body) => (bodyRef.current = body)}
-          />
+      {isLoading && (
+        <View className="absolute inset-0 items-center justify-center bg-[#2F1810]/30">
+          <View className="bg-[#F5F5F0] p-6 rounded-2xl items-center mx-4 border border-[#D2B48C]">
+            <ActivityIndicator size="large" color="#8B4513" />
+            <Text className="mt-3 text-[#2F1810]">
+              Đang kiểm tra nội dung...
+            </Text>
+          </View>
         </View>
-        {mediaUris.length > 0 ? ( // Kiểm tra nếu có media
-          <ScrollView horizontal className="mt-4" showsHorizontalScrollIndicator={false}>
-            {mediaUris.map((uri, index) => (
-              <View key={index} className="w-40 h-full mr-4">
-                <MediaPreview mediaUri={uri} />
-                <Pressable
-                  onPress={() => removeMedia(uri)} // Gọi hàm xóa khi nhấn nút
-                  style={{ position: 'absolute', top: 0, right: 0, backgroundColor: 'red', borderRadius: 15, padding: 5 }}
-                >
-                  <Ionicons name="trash-outline" size={20} color="white" />
-                </Pressable>
+      )}
+
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <View className="flex-1 p-4 bg-[#F5F5F0]">
+          <Text className="text-center text-2xl text-[#2F1810] mb-4">
+            Tạo bài viết
+          </Text>
+
+          <View className="flex-1 bg-white rounded-lg border border-[#D2B48C] overflow-hidden">
+            <RichTextEditor
+              editorRef={editorRef}
+              onChange={(body) => (bodyRef.current = body)}
+            />
+          </View>
+
+          {mediaUris.length > 0 && (
+            <ScrollView horizontal className="mt-4" showsHorizontalScrollIndicator={false}>
+              {mediaUris.map((uri, index) => (
+                <View key={index} className="w-40 h-full mr-4">
+                  <View className="rounded-lg overflow-hidden border border-[#D2B48C]">
+                    <MediaPreview mediaUri={uri} />
+                  </View>
+                  <Pressable
+                    onPress={() => removeMedia(uri)}
+                    className="absolute top-2 right-2 bg-[#8B4513] rounded-full p-1.5"
+                  >
+                    <Trash2 size={20} color="#F5F5F0" strokeWidth={2} />
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          <View className="flex-row items-center mt-4 border-2 border-[#D2B48C] rounded-2xl p-4 bg-white">
+            <Text className="text-lg text-[#2F1810] flex-1">
+              Thêm ảnh hoặc video
+            </Text>
+            <TouchableOpacity
+              onPress={handleImagePicker}
+              className="flex-none ml-auto mr-4"
+            >
+              <ImageIcon size={28} color="#8B4513" strokeWidth={2} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleVideoPicker}
+              className="flex-none"
+            >
+              <Video size={28} color="#8B4513" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          <Pressable
+            onPressIn={() => setPressed(true)}
+            onPressOut={() => setPressed(false)}
+            onPress={handlePost}
+            disabled={isLoading}
+            className={`bg-[#8B4513] p-3 rounded-2xl mt-6 w-1/2 mx-auto
+              ${pressed ? "opacity-80" : "opacity-100"}
+              ${isLoading ? "opacity-50" : ""}`}
+            style={{
+              shadowColor: '#2F1810',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 3,
+              elevation: 3,
+            }}
+          >
+            {isLoading ? (
+              <View className="flex-row items-center justify-center space-x-2">
+                <ActivityIndicator color="#F5F5F0" size="small" />
+                <Text className="text-[#F5F5F0]">Đang xử lý...</Text>
               </View>
-            ))}
-          </ScrollView>
-        ) : null}
+            ) : (
+              <Text className="text-[#F5F5F0] text-center text-lg">Đăng bài</Text>
+            )}
+          </Pressable>
+        </View>
+      </ScrollView>
 
-        <View className="flex-row items-center mt-4 border-2 border-gray-300 rounded-3xl p-4">
-          <Text className="text-lg font-bold flex-1">Thêm ảnh hoặc video</Text>
+      <Dialog
+        visible={dialogVisible}
+        onDismiss={() => setDialogVisible(false)}
+        containerStyle={{
+          backgroundColor: '#F5F5F0',
+          padding: 24,
+          borderRadius: 16,
+          width: '90%',
+          borderWidth: 2,
+          borderColor: '#D2B48C',
+          alignSelf: 'center',
+          alignItems: 'center',
+          shadowColor: '#2F1810',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
+          elevation: 5,
+        }}
+      >
+        <View className="items-center w-full">
+          <View className="w-16 h-16 mb-6 items-center justify-center">
+            <View className="absolute inset-0 bg-[#8B4513] rounded-full opacity-10" />
+            <TriangleAlert size={40} color="#8B4513" strokeWidth={1.5} />
+          </View>
+
+          <Text className="text-xl text-[#2F1810] mb-5 text-center font-medium">
+            {dialogContent}
+          </Text>
+
+          <View className="w-full bg-white/80 p-5 rounded-xl mb-5 border border-[#D2B48C]">
+            <Text className="text-[#2F1810] mb-3 text-base">
+              Vui lòng chỉnh sửa những nội dung được đánh dấu:
+            </Text>
+            <View className="bg-[#FFF5E6] p-3 rounded-lg border border-[#D2B48C]/50">
+              <Text className="text-[#8B4513] text-base">
+                {violatedContent}
+              </Text>
+            </View>
+          </View>
+
           <TouchableOpacity
-            onPress={handleImagePicker}
-            className="flex-none ml-auto mr-4"
+            onPress={() => setDialogVisible(false)}
+            className="bg-[#8B4513] w-full p-4 rounded-xl active:bg-[#6B3410]"
+            style={{
+              shadowColor: '#2F1810',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
           >
-            <Ionicons name="image-outline" size={30} color="black" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleVideoPicker}
-            className="flex-none ml-auto mr-4"
-          >
-            <Ionicons name="videocam-outline" size={30} color="black" />
+            <Text className="text-[#F5F5F0] text-center text-lg font-medium">
+              Đã hiểu, tôi sẽ chỉnh sửa
+            </Text>
           </TouchableOpacity>
         </View>
-
-        <Pressable
-          onPressIn={() => setPressed(true)}
-          onPressOut={() => setPressed(false)}
-          onPress={handlePost}
-          className={`bg-blue-500 p-2 rounded-3xl mt-4 w-1/2 items-center justify-center mx-auto ${
-            pressed ? "opacity-70" : "opacity-100"
-          }`}
-        >
-          <Text className="text-white text-lg font-bold">Đăng bài</Text>
-        </Pressable>
-      </View>
+      </Dialog>
     </KeyboardAvoidingView>
   );
 };

@@ -3,7 +3,6 @@ import {
   View,
   RefreshControl,
   Text,
-  FlatList,
   Share,
   TouchableOpacity,
   ActivityIndicator,
@@ -12,16 +11,10 @@ import {
 import React, { useEffect, useState } from "react";
 import PostCard from "@/components/cards/PostCard";
 import { useBottomSheet } from "@/hooks/BottomSheetProvider";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from "react-native-reanimated";
-import { BlurView } from "expo-blur";
 
 import { account, client } from "@/constants/AppwriteClient";
 import {
-  getCurrentUserId,
+  getTargetId,
   getUserById,
   updateUserStatus,
 } from "@/constants/AppwriteUser";
@@ -36,24 +29,81 @@ import {
   toggleLikePost,
 } from "@/constants/AppwritePost";
 import { config } from "@/constants/Config";
-import { getFile, getFileDownload, getFileUrl } from "@/constants/AppwriteFile";
-import { router, useLocalSearchParams } from "expo-router";
+import {
+  getAvatarUrl,
+  getFileDownload,
+  getFileUrl,
+} from "@/constants/AppwriteFile";
+import { router } from "expo-router";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "@/store/userSlice";
+import {
+  cleanupNotifications,
+  initializeNotifications,
+  registerForPushNotificationsAsync,
+} from "@/services/NotificationService";
+import { Avatar } from "react-native-ui-lib";
+import { Image, Video } from "lucide-react-native";
+import { FlashList } from "@shopify/flash-list";
 
 const home = () => {
   const { isVisible } = useBottomSheet();
-  const scale = useSharedValue(1);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingNext, setLoadingNext] = useState(false);
   const [lastID, setLastID] = useState<string | null>(null);
-  const [limit, setLimit] = useState(3);
+  const [limit, setLimit] = useState(10);
   const { openBottomSheet } = useBottomSheet();
   const dispatch = useDispatch();
+  const currentUserId = useSelector((state: any) => state.currentUser.$id);
+  const userInfo = useSelector((state: any) => state.user);
+  const [pushToken, setPushToken] = useState<string | undefined>();
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
 
-  // Lấy currentUserId từ Redux store
-  const currentUserId = useSelector((state: any) => state.currentUser.$id); // Thay đổi theo cấu trúc state của bạn
+  // Gộp 2 effect notification thành 1
+  useEffect(() => {
+    let mounted = true;
+
+    const setupNotifications = async () => {
+      if (!currentUserId || !mounted) return;
+
+      try {
+        // Khởi tạo notification service trước
+        await initializeNotifications();
+        console.log("Notification service initialized");
+
+        // Sau đó đăng ký và lấy token
+        const token = await registerForPushNotificationsAsync();
+        if (!token || !mounted) return;
+
+        console.log("FCM Token received:", token);
+        setPushToken(token);
+
+        // Lấy và cập nhật target ID
+        const targets = await getTargetId(currentUserId);
+        const pushTarget = targets.find(
+          (target) => target.providerType === "push"
+        );
+
+        if (pushTarget && mounted) {
+          console.log("Push Target ID:", pushTarget.$id);
+          setFcmToken(pushTarget.$id);
+        } else {
+          console.log("No push target found");
+        }
+      } catch (error) {
+        console.error("Error in notification setup:", error);
+      }
+    };
+
+    setupNotifications();
+
+    // Cleanup khi unmount
+    return () => {
+      mounted = false;
+      cleanupNotifications();
+    };
+  }, [currentUserId]); // Chỉ chạy lại khi currentUserId thay đổi
 
   const loadCurrentUserId = async () => {
     if (currentUserId) {
@@ -102,7 +152,6 @@ const home = () => {
     setLoading(true);
     try {
       const fetchedPosts = await fetchPostsFirst(limit);
-      console.log("Fetched Posts:", fetchedPosts); // Log dữ liệu bài viết
       const postsWithUserInfo = await Promise.all(
         fetchedPosts.map(async (post) => {
           const userInfo = await getUserById(post.accountID.accountID);
@@ -235,16 +284,6 @@ const home = () => {
     };
   }, [currentUserId]); // Thêm currentUserId vào dependency array
 
-  React.useEffect(() => {
-    scale.value = withTiming(isVisible ? 0.8 : 1, { duration: 200 });
-  }, [isVisible]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-
   const handleLike = async (postId: string, index: number) => {
     const post = posts[index];
     const newLikesCount = post.isLiked ? post.likes - 1 : post.likes + 1; // Cập nhật số lượng likes
@@ -300,8 +339,12 @@ const home = () => {
     }
   };
 
+  const handlePost = () => {
+    openBottomSheet("createPost");
+  };
+
   const renderItem = ({ item, index }: { item: any; index: number }) => (
-    <View className="mt-2 mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
+    <View className="mt-2 mb-2 bg-[#F5F5F0] shadow-sm rounded-lg overflow-hidden border border-[#D2B48C]">
       <PostCard
         avatar={item.userInfo?.avatarId || ""}
         username={item.userInfo?.username || "Unknown User"}
@@ -330,31 +373,72 @@ const home = () => {
     </View>
   );
 
-  return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      <FlatList
-        data={posts}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.$id}
-        refreshControl={
-          <RefreshControl onRefresh={loadPosts} refreshing={loading} />
-        }
-        ListEmptyComponent={
-          <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500">Không có bài viết nào</Text>
-          </View>
-        }
-        onEndReached={loadMorePosts}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          loadingNext ? (
-            <View className="py-4">
-              <ActivityIndicator size="small" color="#0000ff" />
+  const HeaderComponent = () => {
+    return (
+      <View>
+        <TouchableOpacity
+          className="bg-[#F5F5F0] my-2 p-4 shadow-sm rounded-lg border border-[#D2B48C]"
+          onPress={handlePost}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <Avatar
+                source={{ uri: getAvatarUrl(userInfo?.avatarId) }}
+                size={40}
+              />
+              <Text className="text-base italic text-[#2F1810]">
+                Bạn đang nghĩ gì?
+              </Text>
             </View>
-          ) : null
-        }
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-      />
+            <View className="flex-row items-center gap-4">
+              <Image color="#8B4513" size={24} />
+              <Video color="#8B4513" size={24} />
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView className="flex-1">
+      <View className="flex-1 bg-[#CEC6B5]">
+        <FlashList
+          data={posts}
+          renderItem={renderItem}
+          estimatedItemSize={400} // Ước tính kích thước mỗi item
+          keyExtractor={(item) => item.$id}
+          refreshControl={
+            <RefreshControl
+              onRefresh={loadPosts}
+              refreshing={loading}
+              colors={["#8B4513"]}
+              tintColor="#8B4513"
+            />
+          }
+          ListEmptyComponent={
+            <View className="flex-1 justify-center items-center py-8">
+              <Text className="text-[#2F1810] text-lg">
+                Không có bài viết nào
+              </Text>
+            </View>
+          }
+          onEndReached={loadMorePosts}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingNext ? (
+              <View className="py-4">
+                <ActivityIndicator size="small" color="#8B4513" />
+              </View>
+            ) : null
+          }
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: 16,
+          }}
+          ListHeaderComponent={HeaderComponent}
+        />
+      </View>
     </SafeAreaView>
   );
 };

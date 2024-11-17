@@ -7,11 +7,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import store from "@/store/store";
 import { router } from "expo-router";
 import { BottomSheetProvider } from "@/hooks/BottomSheetProvider";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Drawer } from 'expo-router/drawer';
-import { Ionicons } from "@expo/vector-icons";
-import { size } from "lodash";
+import Toast from "react-native-toast-message";
+import { LogBox } from 'react-native';
 
+LogBox.ignoreLogs(['Warning: ...']);
 
 export default function Layout() {
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +69,7 @@ export default function Layout() {
           <Stack.Screen name="_sitemap" />
         </Stack>
       </BottomSheetProvider>
+      <Toast />
     </Provider>
   );
 }

@@ -6,13 +6,18 @@ export default function HomeStack() {
       <Stack.Screen
         name="index"
         options={{
-          title: "Profile",
+          title: "Hồ sơ",
           headerLargeTitle: true,
           headerShadowVisible: false,
-          headerShown: false
+          headerShown: false,
+          headerStyle: {
+            backgroundColor: '#F5F5F0',
+          },
+          headerLargeTitleStyle: {
+            color: '#2F1810',
+          },
         }}
       />
-      <Stack.Screen name="top_tabs" />
     </Stack>
   );
 }

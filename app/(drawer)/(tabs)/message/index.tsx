@@ -9,19 +9,13 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useBottomSheet } from "@/hooks/BottomSheetProvider";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from "react-native-reanimated";
 import { useSelector } from "react-redux";
-import { areFriends, getFriendsList, updateFollowStatus } from "@/constants/AppwriteFollow";
+import { getFriendsList, updateFollowStatus } from "@/constants/AppwriteFollow";
 import { Avatar } from "react-native-ui-lib";
 import { client } from "@/constants/AppwriteClient";
 import { config } from "@/constants/Config";
 import { router } from "expo-router";
 import { getAvatarUrl } from "@/constants/AppwriteFile";
-import { Ionicons } from "@expo/vector-icons";
 
 // Cập nhật interface Followed
 interface Followed {
@@ -43,7 +37,6 @@ interface Followed {
 
 const Message = () => {
   const { isVisible } = useBottomSheet();
-  const scale = useSharedValue(1);
   const user = useSelector((state: any) => state.currentUser);
   const [userInfo, setUserInfo] = useState(user);
   const [friendsList, setFriendsList] = useState<Followed[]>([]);
@@ -127,37 +120,29 @@ const Message = () => {
     };
   }, [userInfo.$id]);
 
-  React.useEffect(() => {
-    scale.value = withTiming(isVisible ? 0.9 : 1, { duration: 200 });
-  }, [isVisible]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-
   const handleChat = (userId: string) => {
     router.push({
-      pathname: "../../(functions)/chat/[chat]",
+      pathname: "../../../(functions)/chat/[chat]",
       params: { userInfoId: userId, currentUserId: userInfo.$id },
     });
   };
 
   const renderStoryItem = ({ item }: { item: Followed }) => (
-    <TouchableOpacity className="items-center mr-4">
+    <TouchableOpacity className="items-center mr-4 mt-4 h-fit">
       <View className="relative">
-        <Avatar
-          source={{ uri: getAvatarUrl(item.avatarId!!) || undefined }}
-          size={60}
-        />
+        <View className="p-[2px] rounded-full border border-[#D2B48C]">
+          <Avatar
+            source={{ uri: getAvatarUrl(item.avatarId!!) || undefined }}
+            size={60}
+          />
+        </View>
         <View
-          className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
-            item.isOnline ? "bg-green-500" : "bg-gray-400"
+          className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#F5F5F0] ${
+            item.isOnline ? "bg-[#8B4513]" : "bg-[#D2B48C]"
           }`}
         />
       </View>
-      <Text className="text-center mt-1 text-xs font-medium" numberOfLines={1}>
+      <Text className="text-center mt-1.5 text-sm text-[#2F1810]" numberOfLines={1}>
         {item.username}
       </Text>
     </TouchableOpacity>
@@ -165,36 +150,36 @@ const Message = () => {
 
   const renderChatItem = ({ item }: { item: Followed }) => (
     <TouchableOpacity
-      className="bg-white flex-row items-center p-4 border-b border-gray-100"
+      className="flex-row items-center p-4 border-b border-[#D2B48C]"
+      style={{
+        backgroundColor: '#F5F5F0',
+      }}
       onPress={() => handleChat(item.$id)}
     >
       <View className="relative">
-        <Avatar
-          source={{ uri: getAvatarUrl(item.avatarId!!) || undefined }}
-          size={56}
-        />
+        <View className="p-[1px] rounded-full border border-[#D2B48C]">
+          <Avatar
+            source={{ uri: getAvatarUrl(item.avatarId!!) || undefined }}
+            size={56}
+          />
+        </View>
         <View
-          className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
-            item.isOnline ? "bg-green-500" : "bg-gray-400"
+          className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#F5F5F0] ${
+            item.isOnline ? "bg-[#8B4513]" : "bg-[#D2B48C]"
           }`}
         />
       </View>
       <View className="ml-4 flex-1">
-        <Text className="font-semibold text-base">{item.username}</Text>
-        <Text className="text-gray-500 text-sm" numberOfLines={1}>
+        <Text className="font-medium text-base text-[#2F1810]">{item.username}</Text>
+        <Text className="text-[#8B7355] text-sm" numberOfLines={1}>
           {item.lastMessage || "Bắt đầu cuộc trò chuyện"}
         </Text>
       </View>
-      <View className="items-end">
-        {item.lastMessageTime && (
-          <Text className="text-xs text-gray-400 mb-1">
-            {item.lastMessageTime}
-          </Text>
-        )}
-        <View className="bg-purple-500 rounded-full w-6 h-6 items-center justify-center">
-          <Text className="text-white text-xs font-bold">3</Text>
-        </View>
-      </View>
+      {item.lastMessageTime && (
+        <Text className="text-xs text-[#8B7355]">
+          {item.lastMessageTime}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 
@@ -204,8 +189,8 @@ const Message = () => {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="max-h-24 mb-2">
+    <SafeAreaView className="flex-1 bg-[#F5F5F0]">
+      <View className="max-h-40 mb-2 border-b border-[#D2B48C]">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -225,11 +210,15 @@ const Message = () => {
           renderItem={renderChatItem}
           keyExtractor={(item) => item.$id}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor="#8B4513"
+            />
           }
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-10">
-              <Text className="text-gray-500 text-base">
+              <Text className="text-[#8B7355] text-base">
                 Không có cuộc trò chuyện nào
               </Text>
             </View>

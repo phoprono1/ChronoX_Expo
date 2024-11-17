@@ -3,7 +3,8 @@ import { View, Image, TouchableOpacity } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import { getFileUrl } from "@/constants/AppwriteFile";
 import { useBottomSheet } from "@/hooks/BottomSheetProvider";
-import { Ionicons } from "@expo/vector-icons";
+// Import icon từ lucide-react-native
+import { Play } from 'lucide-react-native';
 
 interface LikedPostItemProps {
   postId: string;
@@ -33,7 +34,7 @@ const LikedPostItem: React.FC<LikedPostItemProps> = ({ postId, fileId }) => {
 
   return (
     <TouchableOpacity 
-      className="w-1/3 aspect-square p-1" 
+      className="w-full aspect-square p-1" 
       onPress={handleComment}
     >
       <View className="w-full h-full rounded-md overflow-hidden bg-gray-200">
@@ -55,7 +56,7 @@ const LikedPostItem: React.FC<LikedPostItemProps> = ({ postId, fileId }) => {
         )}
         {mediaType === "video" && (
           <View className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1">
-            <Ionicons name="play" size={12} color="white" />
+            <Play size={12} color="white" strokeWidth={2.5} />
           </View>
         )}
       </View>

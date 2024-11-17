@@ -1,7 +1,6 @@
 import {
   FlatList,
   ActivityIndicator,
-  SafeAreaView,
   NativeSyntheticEvent,
   NativeScrollEvent,
   Share,
@@ -12,10 +11,6 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { getUserById } from "@/constants/AppwriteUser";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-} from "react-native-reanimated";
 import {
   fetchUserPostsFirst,
   fetchUserPostsNext,
@@ -29,20 +24,16 @@ import { setMinimized } from "@/store/minimizeUsersInfoSlice";
 import { getFileDownload, getFileUrl } from "@/constants/AppwriteFile";
 import { useBottomSheet } from "@/hooks/BottomSheetProvider";
 import { clearUserInfo } from "@/store/usersInfo";
+import { FlashList } from "@shopify/flash-list";
 
 const Index = () => {
-  // Sử dụng kiểu đã định nghĩa
   const userInfo = useSelector((state: any) => state.userInfo); // Lấy trạng thái người dùng từ Redux
-  const scale = useSharedValue(1);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingNext, setLoadingNext] = useState(false);
   const [lastID, setLastID] = useState<string | null>(null);
   const [limit, setLimit] = useState(3);
   const dispatch = useDispatch();
-  const isMinimized = useSelector(
-    (state: any) => state.minimizeUsersInfo.isMinimized
-  ); // Lấy trạng thái isMinimized từ Redux
   const { openBottomSheet } = useBottomSheet();
   const { height } = Dimensions.get("window");
   const extraSpace = height * 0.15; // 50% chiều cao màn hình
@@ -156,12 +147,6 @@ const Index = () => {
     );
   };
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-
   // Tạo hàm handleComment
   const handleComment = (postId: string) => {
     openBottomSheet("comment", postId); // Mở modal bình luận và truyền postId
@@ -198,7 +183,7 @@ const Index = () => {
   };
 
   const renderItem = ({ item, index }: { item: any; index: number }) => (
-    <View className="mt-2 mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
+    <View className="mt-2 mb-2 bg-[#F5F5F0] shadow-sm rounded-lg overflow-hidden border border-[#D2B48C]">
       <PostCard
         avatar={item.userInfo?.avatarId || ""}
         username={item.userInfo?.username || "Unknown User"}
@@ -228,33 +213,44 @@ const Index = () => {
   );
 
   return (
-    <View className="flex-1 bg-gray-100">
-      <FlatList
+    <View className="flex-1 bg-[#CEC6B5]" style={{ height: '100%' }}>
+      <FlashList
         data={posts}
         renderItem={renderItem}
+        estimatedItemSize={500}
         keyExtractor={(item) => item.$id}
         refreshControl={
-          <RefreshControl onRefresh={loadPosts} refreshing={loading} />
+          <RefreshControl 
+            onRefresh={loadPosts} 
+            refreshing={loading}
+            colors={["#8B4513"]}
+            tintColor="#8B4513"
+          />
         }
         ListEmptyComponent={
-          <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500">Không có bài viết nào</Text>
+          <View className="flex-1 justify-center items-center py-8">
+            <Text className="text-[#2F1810]">Không có bài viết nào</Text>
           </View>
         }
         onEndReached={loadMorePosts}
         onEndReachedThreshold={0.5}
+        drawDistance={500}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+        }}
         ListFooterComponent={
           loadingNext ? (
-            <View className="py-4">
-              <ActivityIndicator size="small" color="#0000ff" />
+            <View className="py-4 h-20">
+              <ActivityIndicator size="small" color="#8B4513" />
             </View>
           ) : null
         }
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingBottom: extraSpace, // Thêm padding ở dưới cùng
+          paddingBottom: extraSpace,
         }}
         onScroll={handleScroll}
+        scrollEnabled={false}
       />
     </View>
   );

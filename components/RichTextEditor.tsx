@@ -2,7 +2,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
 import React, { useState } from "react";
@@ -11,8 +10,6 @@ import {
   RichToolbar,
   actions,
 } from "react-native-pell-rich-editor";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { TouchableOpacity } from "react-native-gesture-handler";
 
 const RichTextEditor = ({
   editorRef,
@@ -21,96 +18,102 @@ const RichTextEditor = ({
   editorRef: any;
   onChange: (body: string) => void;
 }) => {
-  const [isFirstFocus, setIsFirstFocus] = useState(true); // Biến để kiểm tra lần focus đầu tiên
+  const [isFirstFocus, setIsFirstFocus] = useState(true);
 
   const handleFocus = () => {
     if (isFirstFocus) {
-      editorRef.current.focusContentEditor(); // Hiện bàn phím lần đầu
-      setIsFirstFocus(false); // Đánh dấu đã focus lần đầu
+      editorRef.current.focusContentEditor();
+      setIsFirstFocus(false);
     } else {
-      // Kiểm tra xem bàn phím có đang mở không
       if (Keyboard.isVisible()) {
-        editorRef.current.blurContentEditor(); // Tắt bàn phím nếu đang mở
+        editorRef.current.blurContentEditor();
       } else {
-        editorRef.current.focusContentEditor(); // Hiện bàn phím nếu đang tắt
+        editorRef.current.focusContentEditor();
       }
     }
   };
 
   return (
-    <TouchableOpacity onPress={() => Keyboard.dismiss()}>
-      <View className="min-h-[285px]">
-        <RichToolbar
-          actions={[
-            actions.setStrikethrough,
-            actions.removeFormat,
-            actions.setBold,
-            actions.setItalic,
-            actions.insertOrderedList,
-            actions.blockquote,
-            actions.alignLeft,
-            actions.alignCenter,
-            actions.alignRight,
-            actions.code,
-            actions.line,
-            actions.heading1,
-            actions.heading4,
-          ]}
-          iconMap={{
-            [actions.heading1]: ({ tintColor }: { tintColor: string }) => (
-              <Text style={{ color: tintColor }}>H1</Text>
-            ),
-            [actions.heading4]: ({ tintColor }: { tintColor: string }) => (
-              <Text style={{ color: tintColor }}>H4</Text>
-            ),
-          }}
-          style={styles.richBar}
-          flatContainerStyle={styles.flatStyle}
-          selectedIconTintColor={useThemeColor(
-            { light: "#000", dark: "#fff" },
-            "text"
-          )}
-          editor={editorRef}
-          disable={false}
-        />
-        <RichEditor
-          ref={editorRef}
-          containerStyle={styles.rich}
-          editorStyle={styles.contentStyle}
-          placeholder="Chia sẻ cảm xúc của bạn!"
-          onFocus={handleFocus} // Sử dụng hàm handleFocus
-          onChange={onChange}
-        />
-      </View>
-    </TouchableOpacity>
+    <View className="min-h-[285px]">
+      <RichToolbar
+        actions={[
+          actions.setBold,
+          actions.setItalic,
+          actions.setStrikethrough,
+          actions.insertOrderedList,
+          actions.blockquote,
+          actions.alignLeft,
+          actions.alignCenter,
+          actions.alignRight,
+          actions.line,
+          actions.heading1,
+          actions.heading4,
+          actions.removeFormat,
+        ]}
+        iconMap={{
+          [actions.heading1]: ({ tintColor }: { tintColor: string }) => (
+            <Text style={[styles.headingButton, { color: tintColor }]}>H1</Text>
+          ),
+          [actions.heading4]: ({ tintColor }: { tintColor: string }) => (
+            <Text style={[styles.headingButton, { color: tintColor }]}>H4</Text>
+          ),
+        }}
+        style={styles.richBar}
+        flatContainerStyle={styles.flatStyle}
+        selectedIconTintColor="#8B4513"
+        iconTint="#2F1810"
+        editor={editorRef}
+        disable={false}
+      />
+      <RichEditor
+        ref={editorRef}
+        containerStyle={styles.rich}
+        editorStyle={styles.contentStyle}
+        placeholder="Chia sẻ cảm xúc của bạn!"
+        onFocus={handleFocus}
+        onChange={onChange}
+        initialHeight={240}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   richBar: {
-    borderWidth: 0,
-    borderColor: "#ccc",
-    borderTopRightRadius: 20,
-    borderTopLeftRadius: 20,
-    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: '#D2B48C',
+    borderTopRightRadius: 12,
+    borderTopLeftRadius: 12,
+    backgroundColor: '#F5F5F0',
+    overflow: 'hidden',
   },
   flatStyle: {
     paddingHorizontal: 8,
-    gap: 3,
+    paddingVertical: 4,
+    gap: 4,
+    backgroundColor: '#F5F5F0',
   },
   rich: {
     minHeight: 240,
     flex: 1,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderBottomRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    borderColor: "#ccc",
-    padding: 10,
-    overflow: "hidden",
+    borderBottomRightRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderColor: '#D2B48C',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    overflow: 'hidden',
   },
   contentStyle: {
-    color: "black",
+    color: '#2F1810',
+    backgroundColor: '#FFFFFF',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  headingButton: {
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

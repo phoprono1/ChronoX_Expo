@@ -7,7 +7,7 @@ import {
   Share,
   View,
   RefreshControl,
-  Text
+  Text,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { getCurrentUserId, getUserById } from "@/constants/AppwriteUser";
@@ -31,7 +31,11 @@ import { getFileDownload } from "@/constants/AppwriteFile";
 import { useBottomSheet } from "@/hooks/BottomSheetProvider";
 import Footer from "@/components/Footer";
 
-const Index = () => {
+interface PostsListProps {
+  currentUserId: string | null;
+}
+
+const PostsList: React.FC<PostsListProps> = ({ currentUserId }) => {
   // Sử dụng kiểu đã định nghĩa
   const scale = useSharedValue(1);
   const [posts, setPosts] = useState<any[]>([]);
@@ -39,7 +43,6 @@ const Index = () => {
   const [loadingNext, setLoadingNext] = useState(false);
   const [lastID, setLastID] = useState<string | null>(null);
   const [limit, setLimit] = useState(3);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const dispatch = useDispatch();
   const isMinimized = useSelector((state: any) => state.minimize.isMinimized); // Lấy trạng thái isMinimized từ Redux
   const { openBottomSheet } = useBottomSheet();
@@ -57,7 +60,6 @@ const Index = () => {
     try {
       const currentAccount = await account.get();
       const currentUserId = await getCurrentUserId(currentAccount.$id);
-      setCurrentUserId(currentUserId);
     } catch (error) {
       console.error("Lỗi khi lấy thông tin người dùng:", error);
     }
@@ -119,7 +121,7 @@ const Index = () => {
       const uniquePosts = fetchedPosts.filter(
         (post) => !posts.some((existingPost) => existingPost.$id === post.$id)
       );
-  
+
       const postsWithUserInfo = await Promise.all(
         uniquePosts.map(async (post) => {
           const userInfo = await getUserById(post.accountID.accountID);
@@ -134,7 +136,7 @@ const Index = () => {
           };
         })
       );
-  
+
       setPosts((prevPosts) => [...prevPosts, ...postsWithUserInfo]);
       setLastID(
         uniquePosts.length > 0 ? uniquePosts[uniquePosts.length - 1].$id : null
@@ -149,7 +151,6 @@ const Index = () => {
   const handleLike = async (postId: string, index: number) => {
     const post = posts[index];
     const newLikesCount = post.isLiked ? post.likes - 1 : post.likes + 1; // Cập nhật số lượng likes
-    const statisticsPost = await getPostStatistics(postId);
 
     await toggleLikePost(postId, currentUserId ?? "");
 
@@ -160,12 +161,6 @@ const Index = () => {
       )
     );
   };
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
 
   // Tạo hàm handleComment
   const handleComment = (postId: string) => {
@@ -203,8 +198,7 @@ const Index = () => {
   };
 
   const renderItem = ({ item, index }: { item: any; index: number }) => (
-    <View className="mt-2 mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
-
+    <View className="mt-2 mb-2 bg-[#F5F5F0] rounded-lg overflow-hidden border border-[#D2B48C]">
       <PostCard
         avatar={item.userInfo?.avatarId || ""}
         username={item.userInfo?.username || "Unknown User"}
@@ -216,7 +210,7 @@ const Index = () => {
         comments={item.comments}
         isLiked={item.isLiked}
         onUserInfoPress={() => {}}
-        onLike={() => handleLike(item.$id, index)} // Gọi hàm handleLike
+        onLike={() => handleLike(item.$id, index)}
         onTitlePress={() => handleComment(item.$id)}
         onHashtagPress={() => {}}
         onComment={() => handleComment(item.$id)}
@@ -234,17 +228,24 @@ const Index = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-[#CEC6B5]">
       <FlatList
         data={posts}
         renderItem={renderItem}
         keyExtractor={(item) => item.$id}
         refreshControl={
-          <RefreshControl onRefresh={loadPosts} refreshing={loading} />
+          <RefreshControl 
+            onRefresh={loadPosts} 
+            refreshing={loading}
+            tintColor="#8B4513"
+            colors={["#8B4513"]}
+          />
         }
         ListEmptyComponent={
-          <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500">Không có bài viết nào</Text>
+          <View className="flex-1 justify-center items-center py-8">
+            <Text className="text-[#8B7355] text-base">
+              Không có bài viết nào
+            </Text>
           </View>
         }
         onEndReached={loadMorePosts}
@@ -252,16 +253,20 @@ const Index = () => {
         ListFooterComponent={
           loadingNext ? (
             <View className="py-4">
-              <ActivityIndicator size="small" color="#0000ff" />
+              <ActivityIndicator size="small" color="#8B4513" />
             </View>
           ) : null
         }
-        contentContainerStyle={{ paddingHorizontal: 16 }}
+        contentContainerStyle={{ 
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+        }}
         onScroll={handleScroll}
+        scrollEnabled={false}
+        showsVerticalScrollIndicator={false}
       />
-      <View className="mb-44"/>
-    </SafeAreaView>
+    </View>
   );
 };
 
-export default Index;
+export default PostsList;

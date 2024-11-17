@@ -69,9 +69,13 @@ export const BottomSheetProvider: React.FC<{ children: React.ReactNode }> = ({
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
+        animatedIndex={{
+        value: isVisible ? 0 : -1,
+        duration: 250,
+      }}
       />
     ),
-    []
+    [isVisible]
   );
 
   return (
@@ -87,6 +91,7 @@ export const BottomSheetProvider: React.FC<{ children: React.ReactNode }> = ({
           enablePanDownToClose={true}
           index={isVisible ? 0 : -1} // Đặt index để không che khuất bottom tab
           backdropComponent={renderBackdrop}
+          enableContentPanningGesture={false}
         >
           {isVisible && currentAction === 'createPost' && (
             <BottomSheetScrollView>

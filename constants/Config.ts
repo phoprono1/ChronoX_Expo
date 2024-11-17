@@ -1,5 +1,5 @@
 export const config = {
-  endpoint: "http://192.168.1.5/v1",
+  endpoint: "http://10.0.2.2:80/v1",
   platform: "com.hoangpho.chronox",
   projectId: "66d2b51d003002a3b407",
   databaseId: "66d442f4000eac24b59f",
@@ -11,7 +11,10 @@ export const config = {
   statisticsPostCollectionId: "66e11a2e00314b70f004",
   commentCollectionId: "66e99884002e5850c9f3",
   followCollectionId: "66fe68260031414fff9e",
-  chatCollectionId: "671364530018753c3aa5"
+  chatCollectionId: "671364530018753c3aa5",
+  callsCollectionId: "67356bad002baa677827",
+  functionId: "67244a8a00322020d18f",
+  agoraAppId: 'f606f0755d344d92af1b4d943a55a5a8',
 };
 
 const {
@@ -25,5 +28,7 @@ const {
   storagePostId,
   commentCollectionId,
   followCollectionId,
-  chatCollectionId
+  chatCollectionId,
+  callsCollectionId,
+  agoraAppId
 } = config;

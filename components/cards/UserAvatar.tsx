@@ -2,33 +2,51 @@ import { getAvatarUrl } from '@/constants/AppwriteFile';
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Avatar } from 'react-native-ui-lib';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Import biểu tượng từ FontAwesome
+import { Phone, Video } from 'lucide-react-native';
 
 interface UserAvatarProps {
-  userId: string; // ID của người dùng
-  userName: string; // Tên người dùng
-  avatarUrl: string; // Đường dẫn đến avatar
+  userId: string;
+  userName: string;
+  avatarUrl: string;
+  startVideoCall: () => void;
 }
 
-const UserAvatar: React.FC<UserAvatarProps> = ({ userId, userName, avatarUrl }) => {
+const UserAvatar: React.FC<UserAvatarProps> = ({ userId, userName, avatarUrl, startVideoCall }) => {
   return (
     <View className="flex-row items-center justify-between">
       <View className="flex-row items-center">
-        <Avatar
-          source={{ uri: getAvatarUrl(avatarUrl) }} // Đường dẫn đến avatar
-          size={50} // Kích thước avatar
-          backgroundColor="#E5E5EA" // Màu nền nếu không có ảnh
-        />
-        <Text className="ml-2 text-lg font-bold">
+        <View className="p-[2px] rounded-full border border-[#D2B48C]">
+          <Avatar
+            source={{ uri: getAvatarUrl(avatarUrl) }}
+            size={48}
+            backgroundColor="#F5F5F0"
+          />
+        </View>
+        <Text className="ml-3 text-lg font-medium text-[#2F1810]">
           {userName}
         </Text>
       </View>
-      <View className="flex-row">
-        <TouchableOpacity className="mr-4">
-          <Icon name="phone" size={24} color="#007AFF" />
+      
+      <View className="flex-row space-x-5">
+        <TouchableOpacity 
+          className="w-10 h-10 items-center justify-center rounded-full border border-[#D2B48C] bg-[#F5F5F0] active:bg-[#D2B48C]/20"
+        >
+          <Phone 
+            size={20} 
+            color="#8B4513"
+            strokeWidth={1.5}
+          />
         </TouchableOpacity>
-        <TouchableOpacity>
-          <Icon name="video-camera" size={24} color="#007AFF" />
+        
+        <TouchableOpacity 
+          onPress={startVideoCall}
+          className="w-10 h-10 items-center justify-center rounded-full border border-[#D2B48C] bg-[#F5F5F0] active:bg-[#D2B48C]/20"
+        >
+          <Video 
+            size={20} 
+            color="#8B4513"
+            strokeWidth={1.5}
+          />
         </TouchableOpacity>
       </View>
     </View>

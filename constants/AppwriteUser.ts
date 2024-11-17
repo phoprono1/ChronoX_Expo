@@ -1,7 +1,7 @@
 import { account, databases, avatars } from "./AppwriteClient";
 import { uploadFile } from "./AppwriteFile";
 import { config } from "./Config";
-import { ID, Query } from "react-native-appwrite";
+import { ID, Models, Query } from "react-native-appwrite";
 
 export const createUser = async (
   username: string,
@@ -24,7 +24,7 @@ export const createUser = async (
         accountID: response.$id,
         username,
         email,
-        avatar,
+        avatarId: avatar,
         bio: "",
         followed: 0,
         follower: 0,
@@ -43,13 +43,21 @@ export const signInUser = async (email: string, password: string) => {
   try {
     // Tạo phiên đăng nhập cho người dùng
     const response = await account.createEmailPasswordSession(email, password);
+    
     // Tạo JWT cho phiên đăng nhập
     const jwtResponse = await account.createJWT();
-    const jwt = jwtResponse.jwt; // Lấy token từ phản hồi
-    return jwt; // Trả về token để sử dụng nếu cần
+    const jwt = jwtResponse.jwt;
+
+    // Lấy thông tin user hiện tại
+    const currentUser = await getUserInfo();
+    
+    return {
+      jwt,
+      userId: currentUser.$id
+    };
   } catch (error) {
     console.error("Đăng nhập thất bại:", error);
-    throw error; // Ném lỗi để xử lý ở nơi gọi hàm
+    throw error;
   }
 };
 
@@ -177,5 +185,90 @@ export const signOutUser = async () => {
   } catch (error) {
     console.error("Lỗi khi đăng xuất:", error);
     throw error; // Ném lỗi để xử lý ở nơi gọi hàm
+  }
+};
+
+export const getAllUsers = async (limit = 100, cursor: string | null = null): Promise<Models.DocumentList<Models.Document>> => {
+  try {
+    let queries = [Query.limit(limit)];
+    if (cursor) {
+      queries.push(Query.cursorAfter(cursor));
+    }
+    const users = await databases.listDocuments(
+      config.databaseId,
+      config.userCollectionId,
+      queries
+    );
+    return users;
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách người dùng:", error);
+    throw error;
+  }
+};
+
+export const getTargetId = async (userId: string) => {
+  const user = await account.get();
+  console.log("user.targets", user.targets);
+  return user.targets;
+};
+
+export const updateUserTargetId = async (userId: string, targetId: string) => {
+  try {
+    await databases.updateDocument(
+      config.databaseId,
+      config.userCollectionId,
+      userId,
+      {
+        targetId: targetId
+      }
+    );
+    console.log('Đã cập nhật targetId cho user:', userId);
+  } catch (error) {
+    console.error('Lỗi khi cập nhật targetId:', error);
+    throw error;
+  }
+};
+
+// Hàm lấy danh sách target của những người đang follow
+export const getFollowerTargets = async (userId: string) => {
+  try {
+    // Lấy danh sách người theo dõi
+    const followers = await databases.listDocuments(
+      config.databaseId,
+      config.followCollectionId,
+      [Query.equal("followed", userId)]
+    );
+
+    console.log("Số lượng followers:", followers.documents.length);
+
+    // Lọc và lấy targetId của từng follower
+    const followerTargets = await Promise.all(
+      followers.documents.map(async (follower) => {
+        try {
+          // Lấy thông tin user từ follower document
+          const userDoc = await databases.getDocument(
+            config.databaseId,
+            config.userCollectionId,
+            follower.follower.$id
+          );
+
+          console.log("Tìm thấy user:", userDoc.username);
+          
+          // Trả về targetId nếu có
+          return userDoc.targetId ? [userDoc.targetId] : [];
+        } catch (error) {
+          console.error(`Lỗi khi lấy targetId của user ${follower.follower.$id}:`, error);
+          return [];
+        }
+      })
+    );
+
+    const uniqueTargets = [...new Set(followerTargets.flat())];
+    console.log("Tổng số targets tìm thấy:", uniqueTargets.length);
+    
+    return uniqueTargets;
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách target:", error);
+    throw error;
   }
 };

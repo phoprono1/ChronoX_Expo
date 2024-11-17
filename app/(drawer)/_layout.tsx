@@ -1,7 +1,6 @@
 import { Drawer } from "expo-router/drawer";
 import { Href, router, Tabs, usePathname } from "expo-router";
-import { Ionicons, FontAwesome, EvilIcons } from "@expo/vector-icons";
-import { TouchableOpacity, View, Text } from "react-native";
+import { TouchableOpacity, View, Text, Image } from "react-native";
 import { useBottomSheet } from "@/hooks/BottomSheetProvider";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useEffect, useState } from "react";
@@ -14,12 +13,22 @@ import { useDispatch } from "react-redux";
 import { setUser } from "@/store/userSlice";
 import { getUserPostsCount } from "@/constants/AppwritePost";
 
+import {
+  Home,
+  Search,
+  MessageCircle,
+  User,
+  LogOut
+} from 'lucide-react-native';
+
+// Import thêm type từ lucide-react-native
+import { LucideIcon } from 'lucide-react-native';
+
+// Sửa lại type DrawerItemType
 type DrawerItemType = {
-  icon: typeof FontAwesome | typeof Ionicons;
-  name: string;
+  icon: LucideIcon;  // Thay đổi type của icon
   label: string;
   route: string;
-  iconType: 'FontAwesome' | 'Ionicons';
 };
 
 export default function Layout() {
@@ -75,34 +84,27 @@ export default function Layout() {
     }
   };
 
+  // Cập nhật danh sách drawer items
   const drawerItems: DrawerItemType[] = [
     {
-      icon: FontAwesome,
-      name: "home",
+      icon: Home,
       label: "Home",
-      route: "/(drawer)/(tabs)/home",
-      iconType: "FontAwesome"
+      route: "/(drawer)/(tabs)/home"
     },
     {
-      icon: FontAwesome,
-      name: "search",
+      icon: Search,
       label: "Search",
-      route: "/(drawer)/(tabs)/search",
-      iconType: "FontAwesome"
+      route: "/(drawer)/(tabs)/search"
     },
     {
-      icon: Ionicons,
-      name: "chatbubble-ellipses",
+      icon: MessageCircle,
       label: "Message",
-      route: "/(drawer)/(tabs)/message",
-      iconType: "Ionicons"
+      route: "/(drawer)/(tabs)/message"
     },
     {
-      icon: FontAwesome,
-      name: "user",
+      icon: User,
       label: "Profile",
-      route: "/(drawer)/(tabs)/profile",
-      iconType: "FontAwesome"
+      route: "/(drawer)/(tabs)/profile"
     },
   ];
 
@@ -111,65 +113,63 @@ export default function Layout() {
       return pathName.includes(route.split("/").pop() || "");
     };
 
-    const renderIcon = (item: DrawerItemType) => {
-      const color = isActiveRoute(item.route) ? "#ffffff" : "#000000";
-      
-      if (item.iconType === "FontAwesome") {
-        return (
-          <FontAwesome
-            name={item.name as any}
-            size={24}
-            color={color}
-          />
-        );
-      } else {
-        return (
-          <Ionicons
-            name={item.name as any}
-            size={24}
-            color={color}
-          />
-        );
-      }
-    };
-
     return (
-      <View className="flex-1">
-        <DrawerContentScrollView {...props} className="flex-1 pt-5">
-          {drawerItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              className={`flex-row items-center mx-2 my-1 px-4 py-3 rounded-lg ${
-                isActiveRoute(item.route)
-                  ? "bg-blue-500"
-                  : "bg-transparent"
-              }`}
-              onPress={() => router.push(item.route as Href)}
-            >
-              {renderIcon(item)}
-              <Text
-                className={`ml-4 font-medium ${
-                  isActiveRoute(item.route)
-                    ? "text-white"
-                    : "text-gray-800"
+      <View className="flex-1 bg-[#CEC6B5]">
+        {/* Header của Drawer */}
+        <View className="pt-12 pb-6 px-4 bg-[#8B4513] items-center justify-center">
+          <Image 
+            source={require('@/assets/images/CHRONOX.png')}
+            className="w-32 h-32 rounded-full"
+            resizeMode="contain"
+          />
+        </View>
+
+        <DrawerContentScrollView 
+          {...props} 
+          className="flex-1"
+          contentContainerStyle={{
+            paddingTop: 20
+          }}
+        >
+          {drawerItems.map((item, index) => {
+            const isActive = isActiveRoute(item.route);
+            const IconComponent = item.icon;
+            
+            return (
+              <TouchableOpacity
+                key={index}
+                className={`flex-row items-center mx-2 my-1 px-4 py-3 rounded-lg ${
+                  isActive 
+                    ? "bg-[#8B4513] border border-[#D2B48C]" 
+                    : "bg-[#F5F5F0] border border-[#D2B48C]"
                 }`}
+                onPress={() => router.push(item.route as Href)}
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <IconComponent 
+                  size={24} 
+                  color={isActive ? "#F5F5F0" : "#2F1810"} 
+                />
+                <Text
+                  className={`ml-4 font-medium ${
+                    isActive 
+                      ? "text-[#F5F5F0]" 
+                      : "text-[#2F1810]"
+                  }`}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </DrawerContentScrollView>
         
+        {/* Nút Đăng xuất */}
         <TouchableOpacity 
           onPress={handleSignOut}
-          className="flex-row items-center mx-2 mb-8 px-4 py-3 border-t border-gray-200"
+          className="flex-row items-center mx-2 mb-8 px-4 py-3 border-t border-[#D2B48C] mt-2"
         >
-          <FontAwesome 
-            name="sign-out" 
-            size={24} 
-            color="#EF4444" 
-          />
-          <Text className="ml-4 font-medium text-red-500">
+          <LogOut size={24} color="#8B4513" />
+          <Text className="ml-4 font-medium text-[#8B4513]">
             Đăng xuất
           </Text>
         </TouchableOpacity>
@@ -180,7 +180,16 @@ export default function Layout() {
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        drawerStyle: {
+          backgroundColor: '#CEC6B5',
+          width: 280,
+        },
+        sceneContainerStyle: {
+          backgroundColor: '#CEC6B5'
+        }
+      }}
     />
   );
 }

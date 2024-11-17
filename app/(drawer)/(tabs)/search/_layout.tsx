@@ -49,17 +49,25 @@ export default function HomeStack() {
   }, []);
 
   return (
-    <Stack>
+    <Stack screenOptions={{
+      animation: 'fade_from_bottom', // hoặc 'slide_from_bottom'
+      animationDuration: 200,
+      gestureEnabled: true,
+      gestureDirection: 'horizontal',
+      presentation: 'card',
+      animationTypeForReplace: 'push',
+    }}>
       <Stack.Screen
         name="index"
         options={{
           title: "Search",
-          headerLargeTitle: true,
-          headerShadowVisible: false,
-          headerTintColor: '#0000ff',
-          headerSearchBarOptions: {
-            placeholder: 'Tìm kiếm'
-          }
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name="search_detail"
+        options={{
+          headerShown: false,
         }}
       />
     </Stack>

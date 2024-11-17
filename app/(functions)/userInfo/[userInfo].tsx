@@ -13,6 +13,8 @@ import UsersPosts from "@/components/cards/UsersPosts";
 import FollowComponent from "@/components/FollowComponent";
 import { getCurrentUserId } from "@/constants/AppwriteUser";
 import { isFollowing } from "@/constants/AppwriteFollow";
+import { Tabs } from "react-native-collapsible-tab-view";
+import Index from "@/components/cards/UsersPosts";
 
 const UserInfo = () => {
   const { userInfoId } = useLocalSearchParams(); // Lấy userInfo từ params
@@ -71,7 +73,7 @@ const UserInfo = () => {
         const currentAccount = await account.get();
         const currentAccountId = currentAccount.$id; // Lấy ID của tài khoản hiện tại
         const events = JSON.parse(JSON.stringify(response.events)); // Chuyển đổi payload về đối tượng
-        const payload = JSON.parse(JSON.stringify(response.payload)); 
+        const payload = JSON.parse(JSON.stringify(response.payload));
         // Kiểm tra sự kiện
         if (
           events.some(
@@ -81,7 +83,9 @@ const UserInfo = () => {
         ) {
           // Nếu là sự kiện create
           // Kiểm tra quyền đọc
-          if (payload.$permissions.includes(`read("user:${currentAccountId}")`)) {
+          if (
+            payload.$permissions.includes(`read("user:${currentAccountId}")`)
+          ) {
             setFollowingStatus(true); // Đặt trạng thái theo dõi thành true
           }
         } else if (
@@ -92,7 +96,9 @@ const UserInfo = () => {
         ) {
           // Nếu là sự kiện delete
           // Kiểm tra quyền đọc
-          if (payload.$permissions.includes(`read("user:${currentAccountId}")`)) {
+          if (
+            payload.$permissions.includes(`read("user:${currentAccountId}")`)
+          ) {
             setFollowingStatus(false); // Đặt trạng thái theo dõi thành false
           }
         }
@@ -104,8 +110,8 @@ const UserInfo = () => {
     };
   }, []);
 
-  return (
-    <SafeAreaView className="flex-1 bg-white">
+  const Header = () => (
+    <View>
       <UsersProfile />
       {Array.isArray(userInfoId) ? null : userInfoId ===
         currentUserId ? null : (
@@ -117,7 +123,18 @@ const UserInfo = () => {
           isFollowing={followingStatus} // Truyền trạng thái theo dõi vào FollowComponent
         />
       )}
-      <UsersPosts />
+    </View>
+  );
+
+  return (
+    <SafeAreaView className="flex-1 bg-white">
+      <Tabs.Container renderHeader={Header}>
+        <Tabs.Tab name="posts" label="Bài viết">
+          <Tabs.ScrollView>
+            <Index />
+          </Tabs.ScrollView>
+        </Tabs.Tab>
+      </Tabs.Container>
     </SafeAreaView>
   );
 };

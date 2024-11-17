@@ -1,16 +1,23 @@
+import { View } from 'react-native';
 import { account, databases } from '@/constants/AppwriteClient';
 import { getUserPostsCount } from '@/constants/AppwritePost';
 import { getCurrentUserId, updateUserStatus } from '@/constants/AppwriteUser';
 import { config } from '@/constants/Config';
 import { useBottomSheet } from '@/hooks/BottomSheetProvider';
 import { setUser } from '@/store/currentUser';
-import { Ionicons } from '@expo/vector-icons';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Stack, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, TouchableOpacity } from 'react-native';
 import { Query } from 'react-native-appwrite';
 import { useDispatch } from 'react-redux';
+
+import { 
+  Home,
+  Search,
+  PlusCircle,
+  MessageCircle,
+  User
+} from 'lucide-react-native';
 
 export default function TabLayout() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -101,31 +108,65 @@ export default function TabLayout() {
   }, [currentUserId]);
 
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: 'blue' }}>
+    <Tabs screenOptions={{
+      lazy: true,
+      tabBarStyle: {
+        backgroundColor: '#F5F5F0', // Màu nền vintage
+        borderTopWidth: 1,
+        borderTopColor: '#D2B48C',
+        height: 60,
+        paddingBottom: 8,
+        paddingTop: 8,
+      },
+      tabBarActiveTintColor: '#8B4513', // Màu nâu đồng khi active
+      tabBarInactiveTintColor: '#2F1810', // Màu nâu đậm khi không active
+      tabBarHideOnKeyboard: true,
+      tabBarLabelStyle: {
+        fontFamily: 'PlayfairDisplay-Medium', // Thêm font nếu có
+        fontSize: 12,
+        marginTop: 0,
+      },
+      tabBarIconStyle: {
+        marginTop: 3,
+      }
+    }}>
       <Tabs.Screen
         name="home"
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
+          title: 'Trang chủ',
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-1 rounded-full ${focused ? 'bg-[#D2B48C]/20' : ''}`}>
+              <Home size={24} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
+          unmountOnBlur: true,
           headerShown: false,
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="search" color={color} />, // Đổi thành biểu tượng tìm kiếm
+          title: 'Tìm kiếm',
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-1 rounded-full ${focused ? 'bg-[#D2B48C]/20' : ''}`}>
+              <Search size={24} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="create"
         options={{
-          title: 'Create',
+          title: 'Đăng bài',
           tabBarButton: () => (
             <TouchableOpacity
               onPress={() => openBottomSheet('createPost')}
-              style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }} // Đảm bảo tab có cùng kích thước
+              className="flex-1 items-center justify-center -mt-5"
             >
-              <FontAwesome size={40} name="plus-circle"/>
+              <View className="bg-[#8B4513] p-3 rounded-full border-4 border-[#F5F5F0]">
+                <PlusCircle size={32} color="#F5F5F0" />
+              </View>
             </TouchableOpacity>
           ),
         }}
@@ -133,15 +174,27 @@ export default function TabLayout() {
       <Tabs.Screen
         name="message"
         options={{
+          unmountOnBlur: true,
           headerShown: false,
-          tabBarIcon: ({ color }) => <Ionicons name="chatbubble-ellipses" size={28} color={color} />, // Đổi thành biểu tượng tin nhắn
+          title: 'Tin nhắn',
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-1 rounded-full ${focused ? 'bg-[#D2B48C]/20' : ''}`}>
+              <MessageCircle size={24} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
+          unmountOnBlur: true,
           headerShown: false,
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="user" color={color} />, // Đổi thành biểu tượng người dùng
+          title: 'Hồ sơ',
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-1 rounded-full ${focused ? 'bg-[#D2B48C]/20' : ''}`}>
+              <User size={24} color={color} />
+            </View>
+          ),
         }}
       />
     </Tabs>

@@ -13,15 +13,8 @@ import LikedPostItem from "@/components/cards/LikedPostItem";
 import { setMinimized } from "@/store/minimizeSlice";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const EmptyItem = () => (
-  <View className="w-1/3 aspect-square p-1">
-    <View className="w-full h-full bg-transparent" />
-  </View>
-);
-
 const Likes = () => {
   const user = useSelector((state: any) => state.user);
-  const dispatch = useDispatch();
   const [likedPosts, setLikedPosts] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -48,59 +41,56 @@ const Likes = () => {
     fetchLikedPosts();
   };
 
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    dispatch(setMinimized(offsetY > 50));
-  };
-
-  const renderItem = ({ item }: { item: any }) => {
-    if (item.isEmptyItem) {
-      return <EmptyItem />;
-    }
-    return (
-      <LikedPostItem
-        key={item.postCollections.$id}
-        postId={item.postCollections.$id}
-        fileId={item.postCollections.fileIds[0]}
-      />
-    );
-  };
-
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View className="flex-1 justify-center items-center bg-[#F5F5F0]">
+        <ActivityIndicator size="large" color="#8B4513" />
       </View>
     );
   }
 
-  // Thêm 3 ô ảo vào cuối danh sách
-  const dataWithEmptyItems = [
-    ...likedPosts,
-    { isEmptyItem: true },
-    { isEmptyItem: true },
-    { isEmptyItem: true },
-  ];
+  const renderItem = ({ item }: { item: any }) => (
+    <View className="flex-1 aspect-square max-w-[33.33%] p-0.5">
+      <View className="rounded-lg overflow-hidden border border-[#D2B48C]">
+        <LikedPostItem
+          key={item.postCollections.$id}
+          postId={item.postCollections.$id}
+          fileId={item.postCollections.fileIds[0]}
+        />
+      </View>
+    </View>
+  );
 
   return (
-    <SafeAreaView className="flex-0 bg-white h-3/4" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-[#F5F5F0]" edges={["bottom"]}>
       <FlatList
-        data={dataWithEmptyItems}
+        data={likedPosts}
         renderItem={renderItem}
-        keyExtractor={(item, index) => item.postCollections?.$id || `empty-${index}`}
+        keyExtractor={(item, index) =>
+          item.postCollections?.$id || `empty-${index}`
+        }
         numColumns={3}
-        contentContainerStyle={{ padding: 4 }}
-        onScroll={handleScroll}
+        contentContainerStyle={{ 
+          padding: 4,
+          minHeight: '100%',
+        }}
         ListEmptyComponent={
           <View className="flex-1 justify-center items-center py-20">
-            <Text className="text-gray-500 text-lg">
+            <Text className="text-[#8B7355] text-base">
               Không có bài viết yêu thích nào
             </Text>
           </View>
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor="#8B4513"
+            colors={["#8B4513"]}
+          />
         }
+        scrollEnabled={false}
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );

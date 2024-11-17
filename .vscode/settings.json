@@ -1,0 +1,7 @@
+{
+    "java.configuration.updateBuildConfiguration": "disabled",
+    "java.autobuild.enabled": false,
+    "java.problems.exclude": {
+      "**/node_modules/**": true
+    }
+  }

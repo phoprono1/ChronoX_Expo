@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "371289788575",
+    "project_id": "chronox-8a821",
+    "storage_bucket": "chronox-8a821.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371289788575:android:0b9c002063efa012b652aa",
+        "android_client_info": {
+          "package_name": "com.phoprono1.ChronoX"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkV9ahmwXcyeMs82fZaTvxmFZJOftH4bc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
