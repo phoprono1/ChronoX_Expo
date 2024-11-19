@@ -15,6 +15,8 @@ export const config = {
   callsCollectionId: "67356bad002baa677827",
   functionId: "67244a8a00322020d18f",
   agoraAppId: 'f606f0755d344d92af1b4d943a55a5a8',
+  googleClientId: '927965074288-ag58oknml9q4h3k2lknlbkar3a60njjo.apps.googleusercontent.com',
+  sendMailId: '6739bf9f0020406e65ed'
 };
 
 const {
@@ -30,5 +32,7 @@ const {
   followCollectionId,
   chatCollectionId,
   callsCollectionId,
-  agoraAppId
+  agoraAppId,
+  googleClientId,
+  sendMailId
 } = config;

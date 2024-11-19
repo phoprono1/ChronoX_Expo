@@ -17,6 +17,7 @@ import {
   getTargetId,
   getUserById,
   updateUserStatus,
+  updateUserTargetId,
 } from "@/constants/AppwriteUser";
 import {
   fetchPostById,
@@ -52,7 +53,7 @@ const home = () => {
   const [loading, setLoading] = useState(true);
   const [loadingNext, setLoadingNext] = useState(false);
   const [lastID, setLastID] = useState<string | null>(null);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(3);
   const { openBottomSheet } = useBottomSheet();
   const dispatch = useDispatch();
   const currentUserId = useSelector((state: any) => state.currentUser.$id);
@@ -88,6 +89,7 @@ const home = () => {
         if (pushTarget && mounted) {
           console.log("Push Target ID:", pushTarget.$id);
           setFcmToken(pushTarget.$id);
+          updateUserTargetId(currentUserId, pushTarget.$id);
         } else {
           console.log("No push target found");
         }

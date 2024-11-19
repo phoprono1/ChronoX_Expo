@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  SafeAreaView,
-  Text,
-  TouchableOpacity,
-  View,
-  Image,
-} from "react-native";
+import { Text, TouchableOpacity, View, Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import {
@@ -19,14 +13,16 @@ import { config } from "@/constants/Config";
 import { useSelector } from "react-redux";
 import { getAvatarUrl } from "@/constants/AppwriteFile";
 
-import { 
-  Menu as MenuIcon, 
-  MapPin, 
-  Link as LinkIcon 
-} from 'lucide-react-native';
+import {
+  Menu as MenuIcon,
+  MapPin,
+  Link as LinkIcon,
+} from "lucide-react-native";
+import { router } from "expo-router";
 
 const DisplayAvatar = () => {
   const user = useSelector((state: any) => state.user); // Lấy trạng thái người dùng từ Redux
+  const [showMenu, setShowMenu] = useState(false);
 
   const [userInfo, setUserInfo] = useState<{
     name: string;
@@ -157,24 +153,82 @@ const DisplayAvatar = () => {
     };
   }, []);
 
+  // Thêm component Menu
+  const MenuDropdown = () => {
+    if (!showMenu) return null;
+
+    return (
+      <View
+        className="absolute right-4 top-14 bg-white rounded-xl shadow-lg border border-[#D2B48C] z-50"
+        style={{
+          shadowColor: "#2F1810",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        }}
+      >
+        <TouchableOpacity
+          className="flex-row items-center px-4 py-3 border-b border-[#D2B48C]"
+          onPress={() => {
+            setShowMenu(false);
+            router.push("/(drawer)/(tabs)/profile/edit");
+          }}
+        >
+          <Text className="text-[#2F1810] text-base">Chỉnh sửa hồ sơ</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="flex-row items-center px-4 py-3"
+          onPress={() => {
+            setShowMenu(false);
+            router.push("/(drawer)/(tabs)/profile/settings");
+          }}
+        >
+          <Text className="text-[#2F1810] text-base">Cài đặt</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Thêm hàm đóng menu khi click ra ngoài
+  const handlePressOutside = () => {
+    if (showMenu) {
+      setShowMenu(false);
+    }
+  };
+
   return (
     <View className="bg-[#F5F5F0]">
+      {showMenu && (
+        <TouchableOpacity
+          className="absolute inset-0 z-40"
+          onPress={handlePressOutside}
+        />
+      )}
       {/* Header */}
       <View className="px-4 py-3 flex-row justify-between items-center border-b border-[#D2B48C]">
         <Text className="text-xl text-[#2F1810] font-medium">Hồ sơ</Text>
-        <TouchableOpacity className="w-10 h-10 items-center justify-center rounded-full active:bg-[#D2B48C]/20">
+        <TouchableOpacity
+          className="w-10 h-10 items-center justify-center rounded-full active:bg-[#D2B48C]/20"
+          onPress={() => setShowMenu(!showMenu)}
+        >
           <MenuIcon size={24} color="#8B4513" strokeWidth={1.5} />
         </TouchableOpacity>
       </View>
-  
+
+      <MenuDropdown />
+
       <View className="px-4 pt-4 pb-2">
         {/* Avatar và Thông tin cơ bản */}
         <View className="flex-row justify-between items-start mb-4">
           <View>
-            <Text className="text-2xl text-[#2F1810] font-medium mb-1">{userInfo.name}</Text>
+            <Text className="text-2xl text-[#2F1810] font-medium mb-1">
+              {userInfo.name}
+            </Text>
             <Text className="text-base text-[#8B7355]">{userInfo.email}</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleChangeAvatar}
             className="p-[2px] rounded-full border border-[#D2B48C]"
           >
@@ -188,37 +242,43 @@ const DisplayAvatar = () => {
             />
           </TouchableOpacity>
         </View>
-  
+
         {/* Bio */}
         {userInfo.bio && (
-          <Text className="text-base text-[#2F1810] mb-4 leading-5">{userInfo.bio}</Text>
+          <Text className="text-base text-[#2F1810] mb-4 leading-5">
+            {userInfo.bio}
+          </Text>
         )}
-  
+
         {/* Thống kê */}
         <View className="flex-row items-center space-x-6 mb-4">
           <View className="items-center">
-            <Text className="text-lg font-medium text-[#2F1810]">{userInfo.postsCount}</Text>
+            <Text className="text-lg font-medium text-[#2F1810]">
+              {userInfo.postsCount}
+            </Text>
             <Text className="text-[#8B7355]">Bài viết</Text>
           </View>
           <View className="items-center">
-            <Text className="text-lg font-medium text-[#2F1810]">{userInfo.follower}</Text>
+            <Text className="text-lg font-medium text-[#2F1810]">
+              {userInfo.follower}
+            </Text>
             <Text className="text-[#8B7355]">Người theo dõi</Text>
           </View>
           <View className="items-center">
-            <Text className="text-lg font-medium text-[#2F1810]">{userInfo.followed}</Text>
+            <Text className="text-lg font-medium text-[#2F1810]">
+              {userInfo.followed}
+            </Text>
             <Text className="text-[#8B7355]">Đang theo dõi</Text>
           </View>
         </View>
-  
+
         {/* Location và Website */}
         {(userInfo.location || userInfo.website) && (
           <View className="space-y-2 mb-2">
             {userInfo.location && (
               <View className="flex-row items-center">
                 <MapPin size={16} color="#8B4513" strokeWidth={1.5} />
-                <Text className="text-[#8B7355] ml-2">
-                  {userInfo.location}
-                </Text>
+                <Text className="text-[#8B7355] ml-2">{userInfo.location}</Text>
               </View>
             )}
             {userInfo.website && (

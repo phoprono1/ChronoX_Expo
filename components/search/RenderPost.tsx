@@ -33,7 +33,7 @@ const RenderPost: React.FC<RenderPostProps> = ({
   onUserInfoPress,
 }) => {
   return (
-    <View className=" p-2 bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
+    <View className="m-2 p-2 bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
       <PostCard
         avatar={post.avatar}
         username={post.username}

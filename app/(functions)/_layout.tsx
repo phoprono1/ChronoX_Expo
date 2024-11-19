@@ -10,7 +10,7 @@ const _layout = () => {
     <Provider store={store}>
       <BottomSheetProvider>
         <View style={{ flex: 1, backgroundColor: "transparent" }}>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
             <Stack.Screen
               name="userInfo/[userInfo]"
               options={{ headerShown: false }}

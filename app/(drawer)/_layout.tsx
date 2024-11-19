@@ -78,7 +78,7 @@ export default function Layout() {
       await AsyncStorage.removeItem("token");
       await signOutUser();
       await updateUserStatus(currentUserId!!, 'offline');
-      router.replace("/(auth)/SignIn");
+      router.replace("/(welcome)/");
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
     }
@@ -88,22 +88,22 @@ export default function Layout() {
   const drawerItems: DrawerItemType[] = [
     {
       icon: Home,
-      label: "Home",
+      label: "Trang Chủ",
       route: "/(drawer)/(tabs)/home"
     },
     {
       icon: Search,
-      label: "Search",
+      label: "Tìm Kiếm",
       route: "/(drawer)/(tabs)/search"
     },
     {
       icon: MessageCircle,
-      label: "Message",
+      label: "Tin Nhắn",
       route: "/(drawer)/(tabs)/message"
     },
     {
       icon: User,
-      label: "Profile",
+      label: "Hồ Sơ",
       route: "/(drawer)/(tabs)/profile"
     },
   ];
@@ -170,7 +170,7 @@ export default function Layout() {
         >
           <LogOut size={24} color="#8B4513" />
           <Text className="ml-4 font-medium text-[#8B4513]">
-            Đăng xuất
+            Đăng Xuất
           </Text>
         </TouchableOpacity>
       </View>

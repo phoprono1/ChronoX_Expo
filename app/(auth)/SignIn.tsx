@@ -1,18 +1,50 @@
-import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { Link, useRouter } from "expo-router"; // Sử dụng useRouter thay vì useNavigation
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { signInUser, updateUserTargetId } from "@/constants/AppwriteUser";
+import {
+  checkGoogleAccount,
+  createGoogleUser,
+  createUser,
+  getTargetId,
+  signInGoogleUser,
+  signInUser,
+  updateAvatar,
+  updateUserTargetId,
+} from "@/constants/AppwriteUser";
 import Icon from "react-native-vector-icons/FontAwesome"; // Import biểu tượng
 import { account } from "@/constants/AppwriteClient";
 import { registerForPushNotificationsAsync } from "@/services/NotificationService";
-import { ID } from "react-native-appwrite";
+import { ID, OAuthProvider } from "react-native-appwrite";
+import {
+  GoogleSignin,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
+import { config } from "@/constants/Config";
+import { Client, Account } from "appwrite";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(false); // Thêm state loading
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false); // Loading riêng cho Google
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: config.googleClientId,
+    });
+  }, []);
 
   // Lấy FCM token khi component mount
   useEffect(() => {
@@ -29,6 +61,13 @@ export default function SignIn() {
   }, []);
 
   const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
       // Đăng nhập user
       const { jwt, userId } = await signInUser(email, password);
@@ -48,12 +87,32 @@ export default function SignIn() {
           if (existingPushTarget) {
             // Xóa push target cũ
             await account.deletePushTarget(existingPushTarget.$id);
+            account.createPushTarget(
+              ID.unique(),
+              token,
+              "67234ed10018e2ea077b"
+            );
+          } else {
+            account.createPushTarget(
+              ID.unique(),
+              token,
+              "67234ed10018e2ea077b"
+            );
+            console.log("Push target created", token);
           }
+          // Lấy và cập nhật target ID
+          const targets = await getTargetId(userId);
+          console.log("targets ở đây nè", targets);
+          const pushTarget = targets.find(
+            (target) => target.providerType === "push"
+          );
 
-          // Tạo push target mới
-          const targetId = ID.unique();
-          await updateUserTargetId(userId, targetId);
-          await AsyncStorage.setItem("targetId", targetId);
+          console.log("pushTarget", pushTarget);
+
+          if (pushTarget) {
+            await updateUserTargetId(userId, pushTarget.$id);
+            await AsyncStorage.setItem("targetId", pushTarget.$id);
+          }
         } catch (error: any) {
           console.error("Error managing push target:", error.message);
         }
@@ -62,8 +121,84 @@ export default function SignIn() {
       }
 
       router.replace("/(drawer)/(tabs)/home");
-    } catch (error) {
-      console.error("Sign in failed:", error);
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi đăng nhập",
+        error.message || "Có lỗi xảy ra khi đăng nhập"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Thay thế hàm handleGoogleSignIn
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+      await GoogleSignin.signOut();
+
+      const userInfo = await GoogleSignin.signIn();
+      console.log("Google Sign In Success:", userInfo);
+
+      if (!userInfo.data?.user) {
+        throw new Error("No user info found");
+      }
+
+      const { email, name, photo } = userInfo.data.user;
+
+      try {
+        // Kiểm tra tài khoản tồn tại
+        const { exists, isGoogleAccount } = await checkGoogleAccount(email);
+
+        if (exists) {
+          if (!isGoogleAccount) {
+            // Email đã được đăng ký với phương thức khác
+            Alert.alert(
+              "Lỗi đăng nhập",
+              "Email này đã được đăng ký với phương thức khác"
+            );
+            return;
+          }
+
+          // Đăng nhập nếu là tài khoản Google
+          const { jwt, userId } = await signInGoogleUser(email);
+          await AsyncStorage.setItem("token", jwt);
+          router.replace("/(drawer)/(tabs)/home");
+        } else {
+          // Tạo tài khoản mới nếu chưa tồn tại
+          await createGoogleUser(name || "", email, email, photo || "");
+
+          const { jwt, userId } = await signInGoogleUser(email);
+          await AsyncStorage.setItem("token", jwt);
+
+          if (photo) {
+            await updateAvatar(photo);
+          }
+
+          router.replace("/(drawer)/(tabs)/home");
+        }
+      } catch (error: any) {
+        console.error("Error:", error);
+        Alert.alert(
+          "Lỗi",
+          error.message || "Có lỗi xảy ra khi đăng nhập với Google"
+        );
+      }
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log("User cancelled the sign-in flow");
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log("Sign in is in progress");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        console.log("Play services not available");
+      } else {
+        console.error("Google sign in failed:", error);
+      }
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -118,10 +253,43 @@ export default function SignIn() {
           <TouchableOpacity
             className="bg-[#8B4513] p-4 rounded-md w-full mb-4 border border-[#D2B48C]"
             onPress={handleSignIn}
+            disabled={isLoading}
           >
-            <Text className="text-[#F5F5F0] text-center font-semibold">
-              Đăng Nhập
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator color="#F5F5F0" />
+            ) : (
+              <Text className="text-[#F5F5F0] text-center font-semibold">
+                Đăng Nhập
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <View className="flex-row items-center my-4">
+            <View className="flex-1 h-[1px] bg-[#D2B48C]" />
+            <Text className="mx-4 text-[#8B7355]">hoặc</Text>
+            <View className="flex-1 h-[1px] bg-[#D2B48C]" />
+          </View>
+
+          <TouchableOpacity
+            className="flex-row items-center justify-center bg-white p-4 rounded-md w-full mb-4 border border-[#D2B48C]"
+            onPress={handleGoogleSignIn}
+            disabled={isGoogleLoading}
+          >
+            {isGoogleLoading ? (
+              <ActivityIndicator color="#8B4513" />
+            ) : (
+              <>
+                <Icon
+                  name="google"
+                  size={20}
+                  color="#8B4513"
+                  style={{ marginRight: 10 }}
+                />
+                <Text className="text-[#2F1810] font-semibold">
+                  Đăng nhập với Google
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <Link href="/SignUp">

@@ -10,7 +10,8 @@ import { BottomSheetProvider } from "@/hooks/BottomSheetProvider";
 import Toast from "react-native-toast-message";
 import { LogBox } from 'react-native';
 
-LogBox.ignoreLogs(['Warning: ...']);
+LogBox.ignoreLogs(['ReactImageView:']);
+LogBox.ignoreAllLogs();
 
 export default function Layout() {
   const [isLoading, setIsLoading] = useState(true);
@@ -61,9 +62,10 @@ export default function Layout() {
   return (
     <Provider store={store}>
       <BottomSheetProvider>
-        <Stack>
+        <Stack screenOptions={{ animation: 'slide_from_right' }}>
           <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(welcome)" options={{ headerShown: false }} />
           <Stack.Screen name="(functions)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
           <Stack.Screen name="_sitemap" />

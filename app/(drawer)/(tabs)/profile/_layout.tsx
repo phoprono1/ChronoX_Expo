@@ -18,6 +18,8 @@ export default function HomeStack() {
           },
         }}
       />
+      <Stack.Screen name="edit" options={{ headerShown: false }} />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>
   );
 }

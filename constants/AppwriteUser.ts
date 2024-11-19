@@ -43,17 +43,16 @@ export const signInUser = async (email: string, password: string) => {
   try {
     // Tạo phiên đăng nhập cho người dùng
     const response = await account.createEmailPasswordSession(email, password);
-    
     // Tạo JWT cho phiên đăng nhập
     const jwtResponse = await account.createJWT();
     const jwt = jwtResponse.jwt;
 
     // Lấy thông tin user hiện tại
     const currentUser = await getUserInfo();
-    
+
     return {
       jwt,
-      userId: currentUser.$id
+      userId: currentUser.$id,
     };
   } catch (error) {
     console.error("Đăng nhập thất bại:", error);
@@ -61,7 +60,110 @@ export const signInUser = async (email: string, password: string) => {
   }
 };
 
-export const updateUserStatus = async (userId: string, status: 'online' | 'offline') => {
+// Tạo user mới từ Google account
+export const createGoogleUser = async (
+  username: string,
+  email: string,
+  password: string,
+  photoUrl?: string
+) => {
+  try {
+    const response = await account.create(
+      ID.unique(),
+      email,
+      password,
+      username
+    );
+
+    // Sử dụng ảnh Google nếu có, không thì dùng avatar mặc định
+    const avatarId = photoUrl || avatars.getInitials(username, 30, 30);
+
+    const userDocument = await databases.createDocument(
+      config.databaseId,
+      config.userCollectionId,
+      ID.unique(),
+      {
+        accountID: response.$id,
+        username,
+        email,
+        avatarId,
+        bio: "",
+        followed: 0,
+        follower: 0,
+        location: null,
+        website: null,
+        provider: "google", // Đánh dấu là tài khoản Google
+      }
+    );
+    return userDocument;
+  } catch (error) {
+    console.error("Đăng ký Google thất bại:", error);
+    throw error;
+  }
+};
+
+// Đăng nhập user Google (chỉ cần email)
+// Kiểm tra xem email đã tồn tại và có phải tài khoản Google không
+export const checkGoogleAccount = async (email: string) => {
+  try {
+    const users = await databases.listDocuments(
+      config.databaseId,
+      config.userCollectionId,
+      [Query.equal("email", email)]
+    );
+
+    if (users.documents.length > 0) {
+      const user = users.documents[0];
+      return {
+        exists: true,
+        isGoogleAccount: user.provider === "google",
+      };
+    }
+
+    return {
+      exists: false,
+      isGoogleAccount: false,
+    };
+  } catch (error) {
+    console.error("Lỗi kiểm tra tài khoản:", error);
+    throw error;
+  }
+};
+
+// Sửa lại hàm signInGoogleUser để kiểm tra provider
+export const signInGoogleUser = async (email: string) => {
+  try {
+    const { exists, isGoogleAccount } = await checkGoogleAccount(email);
+
+    if (!exists) {
+      throw new Error("Tài khoản không tồn tại");
+    }
+
+    if (!isGoogleAccount) {
+      throw new Error("Email này đã được đăng ký với phương thức khác");
+    }
+
+    // Tạo phiên đăng nhập với email làm password
+    const response = await account.createEmailPasswordSession(email, email);
+    const jwtResponse = await account.createJWT();
+    const jwt = jwtResponse.jwt;
+
+    const currentUser = await getUserInfo();
+
+    return {
+      jwt,
+      userId: currentUser.$id,
+    };
+  } catch (error) {
+    console.error("Đăng nhập Google thất bại:", error);
+    throw error;
+  }
+};
+
+export const updateUserStatus = async (
+  userId: string,
+  status: "online" | "offline"
+) => {
   try {
     await databases.updateDocument(
       config.databaseId,
@@ -70,7 +172,39 @@ export const updateUserStatus = async (userId: string, status: 'online' | 'offli
       { status: status }
     );
   } catch (error) {
-    console.error('Error updating user status:', error);
+    console.error("Error updating user status:", error);
+  }
+};
+
+export const updateUserInfo = async (
+  userId: string,
+  updates: {
+    name?: string,
+    bio?: string,
+    location?: string,
+    website?: string
+  }
+) => {
+  try {
+    // Lọc bỏ các trường undefined/null/empty string
+    const validUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined && value !== null && value !== '')
+    );
+
+    // Chỉ gửi request nếu có dữ liệu cần cập nhật
+    if (Object.keys(validUpdates).length > 0) {
+      await databases.updateDocument(
+        config.databaseId,
+        config.userCollectionId,
+        userId,
+        validUpdates
+      );
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating user info:", error);
+    throw error;
   }
 };
 
@@ -188,7 +322,10 @@ export const signOutUser = async () => {
   }
 };
 
-export const getAllUsers = async (limit = 100, cursor: string | null = null): Promise<Models.DocumentList<Models.Document>> => {
+export const getAllUsers = async (
+  limit = 100,
+  cursor: string | null = null
+): Promise<Models.DocumentList<Models.Document>> => {
   try {
     let queries = [Query.limit(limit)];
     if (cursor) {
@@ -206,6 +343,31 @@ export const getAllUsers = async (limit = 100, cursor: string | null = null): Pr
   }
 };
 
+export const createUserVerification = async () => {
+  try {
+    // Tạo URL từ token
+    console.log('account', account.createVerification('http://localhost:3000/verify-email'))
+    return account.createVerification('http://localhost:3000/verify-email');
+  } catch (error) {
+    console.error('Create verification error:', error);
+    throw error;
+  }
+};
+
+export const updateUserVerification = async (userId: string, secret: string) => {
+  try {
+    await account.updateVerification(userId, secret);
+    return true;
+  } catch (error) {
+    console.error('Update verification error:', error);
+    throw error;
+  }
+};
+
+export const updateUserPassword = async (oldPassword: string, newPassword: string) => {
+  await account.updatePassword(newPassword, oldPassword);
+};
+
 export const getTargetId = async (userId: string) => {
   const user = await account.get();
   console.log("user.targets", user.targets);
@@ -219,12 +381,12 @@ export const updateUserTargetId = async (userId: string, targetId: string) => {
       config.userCollectionId,
       userId,
       {
-        targetId: targetId
+        targetId: targetId,
       }
     );
-    console.log('Đã cập nhật targetId cho user:', userId);
+    console.log("Đã cập nhật targetId cho user:", userId);
   } catch (error) {
-    console.error('Lỗi khi cập nhật targetId:', error);
+    console.error("Lỗi khi cập nhật targetId:", error);
     throw error;
   }
 };
@@ -253,11 +415,14 @@ export const getFollowerTargets = async (userId: string) => {
           );
 
           console.log("Tìm thấy user:", userDoc.username);
-          
+
           // Trả về targetId nếu có
           return userDoc.targetId ? [userDoc.targetId] : [];
         } catch (error) {
-          console.error(`Lỗi khi lấy targetId của user ${follower.follower.$id}:`, error);
+          console.error(
+            `Lỗi khi lấy targetId của user ${follower.follower.$id}:`,
+            error
+          );
           return [];
         }
       })
@@ -265,7 +430,7 @@ export const getFollowerTargets = async (userId: string) => {
 
     const uniqueTargets = [...new Set(followerTargets.flat())];
     console.log("Tổng số targets tìm thấy:", uniqueTargets.length);
-    
+
     return uniqueTargets;
   } catch (error) {
     console.error("Lỗi khi lấy danh sách target:", error);
