@@ -1,50 +1,93 @@
-# Welcome to your Expo app 👋
+# ChronoX: Ứng dụng Mạng xã hội Di động Full Stack
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+ChronoX là một ứng dụng mạng xã hội di động hiện đại được phát triển bằng React Native và Expo cho frontend, kết hợp với Appwrite làm Backend-as-a-Service. Ứng dụng tập trung vào trải nghiệm người dùng với giao diện thân thiện và các tính năng tương tác xã hội.
 
-## Get started
+## Tính năng Chính
 
-1. Install dependencies
+1. **Xác thực & Bảo mật**
+   - Đăng nhập/Đăng ký với email và Google
+   - Xác thực email
+   - Quản lý phiên đăng nhập với token
+   - Đổi mật khẩu và quên mật khẩu
 
-   ```bash
-   npm install
-   ```
+2. **Tương tác Người dùng**
+   - Đăng bài viết với hình ảnh
+   - Like và bình luận
+   - Theo dõi người dùng
+   - Nhắn tin trực tiếp
+   - Thông báo realtime
 
-2. Start the app
+3. **Quản lý Hồ sơ**
+   - Chỉnh sửa thông tin cá nhân
+   - Upload và thay đổi avatar
+   - Xem thống kê (bài viết, người theo dõi, đang theo dõi)
 
-   ```bash
-    npx expo start
-   ```
+## Công nghệ Sử dụng
 
-In the output, you'll find options to open the app in a
+### Frontend
+- React Native & Expo
+- Redux Toolkit
+- NativeWind (TailwindCSS)
+- Expo Router
+- React Native UI Lib
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Backend & Services
+- Appwrite
+- Firebase Cloud Messaging
+- Google OAuth
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Cài đặt và Chạy Ứng dụng
 
-## Get a fresh project
-
-When you're ready, run:
-
+1. **Clone Repository**
 ```bash
-npm run reset-project
+git clone https://github.com/phoprono1/ChronoX_Expo.git
+cd ChronoX_Expo
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. **Cài đặt Dependencies**
+```bash
+npm install
+```
 
-## Learn more
+3. **Cấu hình Môi trường**
+Tạo file `.env` và thêm các biến môi trường cần thiết:
+```env
+EXPO_PUBLIC_APPWRITE_ENDPOINT=your_endpoint
+EXPO_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+4. **Chạy Ứng dụng**
+```bash
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Cấu trúc Project
+```
+ChronoX_Expo/
+├── app/                 # Expo Router navigation
+├── components/          # React components
+├── constants/          # App configurations
+├── hooks/             # Custom hooks
+├── services/          # API services
+└── store/             # Redux store
+```
 
-## Join the community
+## Tài liệu API
+- [Appwrite Documentation](https://appwrite.io/docs)
+- [Expo Documentation](https://docs.expo.dev/)
 
-Join our community of developers creating universal apps.
+## Đóng góp
+Mọi đóng góp đều được chào đón. Vui lòng:
+1. Fork project
+2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
+3. Commit thay đổi (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Tác giả
+- [phoprono1](https://github.com/phoprono1)
+
+## License
+MIT License
+
+[Link to repository](https://github.com/phoprono1/ChronoX_Expo)
