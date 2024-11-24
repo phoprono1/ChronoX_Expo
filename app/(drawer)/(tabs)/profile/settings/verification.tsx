@@ -3,20 +3,37 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { ArrowLeft, Shield, Mail, CheckCircle2 } from "lucide-react-native";
 import { router, usePathname } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { sendVerificationEmail } from "@/services/EmailService";
+import { checkEmailVerification } from "@/constants/AppwriteUser";
 
 const Verification = () => {
-  const user = useSelector((state: any) => state.user);
+  const user = useSelector((state: any) => state.currentUser);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const pathname = usePathname();
-  console.log('Current path:', pathname); // In ra đường dẫn
+
+  const showEmailVerification = async () => {
+    try {
+      const result = await checkEmailVerification();
+      console.log("checkEmailVerification", result);
+      setIsVerified(result);
+    } catch (error) {
+      console.error("Lỗi kiểm tra xác thực:", error);
+      setIsVerified(false);
+    }
+  };
+
+  useEffect(() => {
+    showEmailVerification();
+  }, []);
 
   const handleSendVerification = async () => {
     try {
       setIsLoading(true);
 
-      const result = await sendVerificationEmail(
+      // Gọi API Next.js thay vì gọi trực tiếp Appwrite
+      await sendVerificationEmail(
         user.userId,
         user.name,
         user.email
@@ -26,8 +43,15 @@ const Verification = () => {
         "Thành công",
         "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư của bạn."
       );
-    } catch (error) {
-      Alert.alert("Lỗi", "Không thể gửi email xác thực. Vui lòng thử lại sau.");
+      
+      // Tự động kiểm tra lại trạng thái sau khi gửi mail
+      await showEmailVerification();
+      
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error.message || "Không thể gửi email xác thực. Vui lòng thử lại sau."
+      );
       console.error("Send verification error:", error);
     } finally {
       setIsLoading(false);
@@ -52,7 +76,7 @@ const Verification = () => {
       {/* Content */}
       <View className="flex-1 p-4">
         <View className="bg-white rounded-xl p-6 border border-[#D2B48C]">
-          {user.emailVerification ? (
+          {isVerified ? (
             // Đã xác thực
             <View className="items-center">
               <View className="w-16 h-16 bg-[#DFF2E5] rounded-full items-center justify-center mb-4">

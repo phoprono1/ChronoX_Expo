@@ -72,6 +72,7 @@ export default function SignIn() {
       // Đăng nhập user
       const { jwt, userId } = await signInUser(email, password);
       await AsyncStorage.setItem("token", jwt);
+      console.log("jwt", jwt);
 
       // Lấy FCM token hiện tại
       const token = fcmToken || (await AsyncStorage.getItem("fcmToken"));

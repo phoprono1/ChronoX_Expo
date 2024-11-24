@@ -16,7 +16,8 @@ export const config = {
   functionId: "67244a8a00322020d18f",
   agoraAppId: 'f606f0755d344d92af1b4d943a55a5a8',
   googleClientId: '927965074288-ag58oknml9q4h3k2lknlbkar3a60njjo.apps.googleusercontent.com',
-  sendMailId: '6739bf9f0020406e65ed'
+  sendMailId: '6739bf9f0020406e65ed',
+  NEXT_PUBLIC_APP_URL: 'http://10.0.2.2:3000'
 };
 
 const {

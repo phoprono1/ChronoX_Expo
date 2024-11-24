@@ -43,6 +43,7 @@ export const signInUser = async (email: string, password: string) => {
   try {
     // Tạo phiên đăng nhập cho người dùng
     const response = await account.createEmailPasswordSession(email, password);
+    console.log("response session", response);
     // Tạo JWT cho phiên đăng nhập
     const jwtResponse = await account.createJWT();
     const jwt = jwtResponse.jwt;
@@ -372,6 +373,12 @@ export const getTargetId = async (userId: string) => {
   const user = await account.get();
   console.log("user.targets", user.targets);
   return user.targets;
+};
+
+export const checkEmailVerification = async () => {
+  const user = await account.get();
+  console.log("user.emailVerification", user.emailVerification);
+  return user.emailVerification;
 };
 
 export const updateUserTargetId = async (userId: string, targetId: string) => {
